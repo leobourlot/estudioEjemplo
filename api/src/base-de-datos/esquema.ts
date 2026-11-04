@@ -1,0 +1,50 @@
+import { Causa } from '../causas/causa.entity.js';
+import { Colaborador } from '../causas/colaborador.entity.js';
+import { Parte } from '../causas/parte.entity.js';
+import { CrearUsuariosClientesYSesiones1790969709009 } from '../migraciones/1790969709009-crear-usuarios-clientes-y-sesiones.js';
+import { CrearCausasPartesYColaboradores1791156117399 } from '../migraciones/1791156117399-crear-causas-partes-y-colaboradores.js';
+import { FalloPalabraClave } from '../jurisprudencia/fallo-palabra-clave.entity.js';
+import { Fallo } from '../jurisprudencia/fallo.entity.js';
+import { PalabraClave } from '../jurisprudencia/palabra-clave.entity.js';
+import { CrearMovimientosYCambios1791333903330 } from '../migraciones/1791333903330-crear-movimientos-y-cambios.js';
+import { CrearFallosYPalabrasClave1791589649680 } from '../migraciones/1791589649680-crear-fallos-y-palabras-clave.js';
+import { CrearModelosEscritos1791689533533 } from '../migraciones/1791689533533-crear-modelos-escritos.js';
+import { AgregarAbogadoPatrocinanteAPartes1793145297279 } from '../migraciones/1793145297279-agregar-abogado-patrocinante-a-partes.js';
+import { AgregarDniAIntegrantes1793318400000 } from '../migraciones/1793318400000-agregar-dni-a-integrantes.js';
+import { HacerOpcionalElFuero1793404800000 } from '../migraciones/1793404800000-hacer-opcional-el-fuero.js';
+import { CrearBaseDemo1793664000000 } from '../migraciones/1793664000000-crear-base-demo.js';
+import { ModeloEscrito } from '../modelos-escritos/modelo-escrito.entity.js';
+import { CambioMovimiento } from '../movimientos/cambio-movimiento.entity.js';
+import { Movimiento } from '../movimientos/movimiento.entity.js';
+import { Cliente } from '../usuarios/cliente.entity.js';
+import { Sesion } from '../usuarios/sesion.entity.js';
+import { Usuario } from '../usuarios/usuario.entity.js';
+
+// Lista única de entidades y migraciones para el CLI de TypeORM y los tests e2e.
+// Cada migración nueva (migration:create o migration:generate) se agrega al final de MIGRATIONS.
+export const ENTITIES = [
+  Usuario,
+  Cliente,
+  Sesion,
+  Causa,
+  Parte,
+  Colaborador,
+  Movimiento,
+  CambioMovimiento,
+  Fallo,
+  PalabraClave,
+  FalloPalabraClave,
+  ModeloEscrito,
+];
+
+export const MIGRATIONS = [
+  CrearUsuariosClientesYSesiones1790969709009,
+  CrearCausasPartesYColaboradores1791156117399,
+  CrearMovimientosYCambios1791333903330,
+  CrearFallosYPalabrasClave1791589649680,
+  CrearModelosEscritos1791689533533,
+  AgregarAbogadoPatrocinanteAPartes1793145297279,
+  AgregarDniAIntegrantes1793318400000,
+  HacerOpcionalElFuero1793404800000,
+  CrearBaseDemo1793664000000,
+];

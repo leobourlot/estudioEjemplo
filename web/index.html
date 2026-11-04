@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- El favicon, el ícono de los teléfonos y la precarga de la tipografía, de la marca (spec 009, RF-2). -->
+    <!--marca-->
+    <!--cabecera-->
+    <!-- Sin el código de la página, lo que se anima al aparecer se ve igual (spec 007, RF-35 y RF-45). -->
+    <noscript>
+      <style>
+        [data-aparecer] {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <div id="root"><!--app--></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,125 @@
+import { act, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
+import { ProveedorServicios } from '../componentes/ProveedorServicios';
+import { ProveedorSesion } from '../componentes/ProveedorSesion';
+import { RutasAplicacion } from '../RutasAplicacion';
+import type { PortalService } from '../servicios/portal';
+import type { Rol, SessionService, UsuarioPropio } from '../servicios/sesion';
+import type { UsersService, UsuarioDetalle } from '../servicios/usuarios';
+import { fakePortalService } from './portal-de-prueba';
+
+/** El inicio del panel, en las listas de destinos de los tests (ver findScreenHeading). */
+export const INICIO_PANEL = 'inicio del panel';
+
+/**
+ * Espera el inicio del panel: el saludo como título principal y la navegación "Panel" (spec 008,
+ * RF-25). El portal saluda igual (RF-28), así que el saludo solo no alcanza para distinguirlos.
+ */
+export async function findPanelHome() {
+  const heading = await screen.findByRole('heading', { name: /^Hola, /, level: 1 });
+  screen.getByRole('navigation', { name: 'Panel' });
+  return heading;
+}
+
+/** Espera el título de una pantalla, o el inicio del panel con INICIO_PANEL. */
+export function findScreenHeading(name: string) {
+  return name === INICIO_PANEL ? findPanelHome() : screen.findByRole('heading', { name });
+}
+
+/** Usuario de prueba con el rol indicado. */
+export function testUser(rol: Rol, overrides: Partial<UsuarioPropio> = {}): UsuarioPropio {
+  return {
+    id: 1,
+    rol,
+    esPrincipal: false,
+    email: 'usuario@estudio.com',
+    dni: rol === 'cliente' ? null : '20111222',
+    nombre: 'Ana',
+    apellido: 'Gómez',
+    debeCambiarContrasena: false,
+    cliente: null,
+    ...overrides,
+  };
+}
+
+/** Cuenta de prueba con auditoría, como la devuelve la gestión de cuentas. */
+export function testAccount(overrides: Partial<UsuarioDetalle> = {}): UsuarioDetalle {
+  return {
+    ...testUser(overrides.rol ?? 'abogado'),
+    activo: true,
+    ultimoIngreso: null,
+    creadoEn: '2026-09-01T15:00:00.000Z',
+    modificadoEn: null,
+    creadoPor: null,
+    modificadoPor: null,
+    ...overrides,
+  };
+}
+
+type Mocked<T> = { [K in keyof T]: ReturnType<typeof vi.fn> } & T;
+
+export type FakeSessionService = Mocked<SessionService>;
+export type FakeUsersService = Mocked<UsersService>;
+
+/** Servicio de sesión simulado; por defecto, sin sesión. */
+export function fakeSessionService(overrides: Partial<SessionService> = {}): FakeSessionService {
+  return {
+    login: vi.fn(),
+    logout: vi.fn().mockResolvedValue(undefined),
+    fetchOwnUser: vi.fn().mockResolvedValue(null),
+    changePassword: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as FakeSessionService;
+}
+
+/** Servicio de usuarios simulado; por defecto, un listado vacío. */
+export function fakeUsersService(overrides: Partial<UsersService> = {}): FakeUsersService {
+  return {
+    listUsers: vi.fn().mockResolvedValue({ items: [], total: 0, pagina: 1, porPagina: 20 }),
+    getUser: vi.fn(async (id: number) => testAccount({ id })),
+    createUser: vi.fn(),
+    updateUser: vi.fn(),
+    deactivateUser: vi.fn().mockResolvedValue(undefined),
+    reactivateUser: vi.fn().mockResolvedValue(undefined),
+    resetPassword: vi.fn().mockResolvedValue(undefined),
+    releaseEmail: vi.fn().mockResolvedValue(undefined),
+    transferPrincipal: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as FakeUsersService;
+}
+
+/**
+ * Renderiza la aplicación completa (proveedor de sesión + rutas) en `path`, con servicios
+ * simulados. `closeSession` simula el aviso de sesión cerrada del cliente HTTP.
+ */
+export function renderApp(
+  path: string,
+  service: SessionService = fakeSessionService(),
+  services: { users?: UsersService; portal?: PortalService } = {},
+) {
+  const listeners = new Set<() => void>();
+  const subscribeSessionClosed = (listener: () => void) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
+  const result = render(
+    <MemoryRouter initialEntries={[path]}>
+      <ProveedorServicios
+        services={{
+          users: services.users ?? fakeUsersService(),
+          portal: services.portal ?? fakePortalService(),
+        }}
+      >
+        <ProveedorSesion service={service} subscribeSessionClosed={subscribeSessionClosed}>
+          <RutasAplicacion />
+        </ProveedorSesion>
+      </ProveedorServicios>
+    </MemoryRouter>,
+  );
+  return {
+    ...result,
+    service,
+    closeSession: () => act(() => listeners.forEach((listener) => listener())),
+  };
+}

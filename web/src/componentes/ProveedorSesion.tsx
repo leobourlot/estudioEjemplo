@@ -1,0 +1,176 @@
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { httpClient } from '../servicios/cliente-http';
+import { IDLE_CHECK_INTERVAL_MS, IDLE_NOTICE, isIdleExpired } from '../servicios/inactividad';
+import { type SessionService, sessionService, type UsuarioPropio } from '../servicios/sesion';
+
+interface SessionContextValue {
+  usuario: UsuarioPropio | null;
+  /** True hasta saber si hay sesión (la primera consulta a la API). */
+  cargando: boolean;
+  login: (documento: string, contrasena: string) => Promise<UsuarioPropio>;
+  logout: () => Promise<void>;
+  /** Cambia la contraseña propia y quita el cambio pendiente del usuario en memoria (RF-36). */
+  changePassword: (contrasenaActual: string, contrasenaNueva: string) => Promise<void>;
+  /** Para actualizar los datos propios después de un cambio. */
+  setUsuario: (usuario: UsuarioPropio | null) => void;
+  /**
+   * Vacía la sesión porque la API la cerró, con un aviso para la pantalla de ingreso
+   * (RF-38). RutaProtegida lleva a /ingresar al ver la sesión vacía.
+   */
+  endSession: (notice: string) => void;
+  /** Aviso pendiente para la pantalla de ingreso, o null. */
+  notice: string | null;
+  clearNotice: () => void;
+}
+
+const SessionContext = createContext<SessionContextValue | null>(null);
+
+const reloadPage = () => window.location.reload();
+
+interface ProveedorSesionProps {
+  children: ReactNode;
+  service?: SessionService;
+  subscribeSessionClosed?: (listener: () => void) => () => void;
+  /** Avisa cada pedido enviado a la API, para medir la inactividad del cliente. */
+  subscribeActivity?: (listener: () => void) => () => void;
+  /** Recarga la aplicación; los tests la reemplazan. */
+  reload?: () => void;
+}
+
+/**
+ * Estado de la sesión, solo en memoria: nunca se guarda en localStorage ni sessionStorage
+ * (principio 5). Al cargar pregunta a la API quién es el usuario; si el cliente HTTP avisa
+ * que la sesión se cerró, el usuario pasa a null y RutaProtegida lleva a /ingresar (RF-17).
+ * Si un cliente pasa 20 minutos sin pedidos a la API, la sesión se vacía sola, sin llamar a la
+ * API: ya venció en el servidor (spec 004, RF-4, RF-5).
+ */
+export function ProveedorSesion({
+  children,
+  service = sessionService,
+  subscribeSessionClosed = httpClient.onSessionClosed,
+  subscribeActivity = httpClient.onActivity,
+  reload = reloadPage,
+}: ProveedorSesionProps) {
+  const [usuario, setUsuario] = useState<UsuarioPropio | null>(null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    service
+      .fetchOwnUser()
+      .catch(() => null)
+      .then((result) => {
+        if (!active) return;
+        setUsuario(result);
+        setCargando(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [service]);
+
+  useEffect(() => subscribeSessionClosed(() => setUsuario(null)), [subscribeSessionClosed]);
+
+  // Si el navegador muestra la página desde su caché de ida y vuelta (el botón "atrás"), puede
+  // traer datos de una sesión ya cerrada: se recarga y se vuelve a preguntar a la API quién es
+  // el usuario (spec 004, RF-6).
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) reload();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, [reload]);
+
+  const login = useCallback(
+    async (documento: string, contrasena: string) => {
+      const result = await service.login(documento, contrasena);
+      setUsuario(result);
+      return result;
+    },
+    [service],
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await service.logout();
+    } finally {
+      setUsuario(null);
+    }
+  }, [service]);
+
+  const changePassword = useCallback(
+    async (contrasenaActual: string, contrasenaNueva: string) => {
+      await service.changePassword(contrasenaActual, contrasenaNueva);
+      setUsuario((current) => (current ? { ...current, debeCambiarContrasena: false } : current));
+    },
+    [service],
+  );
+
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const endSession = useCallback((message: string) => {
+    setUsuario(null);
+    setNotice(message);
+  }, []);
+
+  const clearNotice = useCallback(() => setNotice(null), []);
+
+  // Inactividad del cliente (plan 004, "Inactividad en la pantalla"). Se compara con la hora,
+  // no se cuenta con el temporizador, porque los temporizadores se frenan con la computadora
+  // suspendida; por eso también se controla al volver a la pestaña.
+  const isClient = usuario?.rol === 'cliente';
+  useEffect(() => {
+    if (!isClient) return;
+    let lastActivity = Date.now();
+    const stopListening = subscribeActivity(() => {
+      lastActivity = Date.now();
+    });
+    const check = () => {
+      if (isIdleExpired(lastActivity, Date.now())) endSession(IDLE_NOTICE);
+    };
+    const checkIfVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    const interval = setInterval(check, IDLE_CHECK_INTERVAL_MS);
+    document.addEventListener('visibilitychange', checkIfVisible);
+    window.addEventListener('focus', check);
+    return () => {
+      stopListening();
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', checkIfVisible);
+      window.removeEventListener('focus', check);
+    };
+  }, [isClient, usuario?.id, subscribeActivity, endSession]);
+
+  const value = useMemo(
+    () => ({
+      usuario,
+      cargando,
+      login,
+      logout,
+      changePassword,
+      setUsuario,
+      endSession,
+      notice,
+      clearNotice,
+    }),
+    [usuario, cargando, login, logout, changePassword, endSession, notice, clearNotice],
+  );
+
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+export function useSession(): SessionContextValue {
+  const context = useContext(SessionContext);
+  if (!context) throw new Error('useSession se usa dentro de ProveedorSesion');
+  return context;
+}

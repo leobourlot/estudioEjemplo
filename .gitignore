@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Compilados y reportes
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+
+# Variables de entorno (solo se versionan los .env.example)
+.env*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

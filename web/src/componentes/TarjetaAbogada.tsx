@@ -1,0 +1,40 @@
+import {
+  type Abogada,
+  hasOwnPage,
+  lawyerName,
+  moreInfoSuffix,
+  lawyerPath,
+  TEXTOS,
+} from '../servicios/contenido-sitio';
+import { TEXT_LINK } from './estilos-sitio';
+import { FotoAbogada } from './FotoAbogada';
+
+interface TarjetaAbogadaProps {
+  abogada: Abogada;
+}
+
+/**
+ * Tarjeta de una abogada en el inicio (spec 007, RF-18 y RF-20): foto, nombre, título profesional
+ * y, si ya tiene sus textos, el resumen y "Más información", que lleva a su página. El contenido
+ * va arriba, para que las tarjetas se vean ordenadas aunque tengan distinta cantidad de texto.
+ */
+export function TarjetaAbogada({ abogada }: TarjetaAbogadaProps) {
+  return (
+    <article className="flex flex-col items-center rounded-2xl border border-slate-300 bg-estudio-azul/15 p-6 text-center shadow-sm transition hover:shadow-md focus-within:shadow-md motion-safe:hover:-translate-y-1 motion-safe:focus-within:-translate-y-1 motion-reduce:transition-none">
+      <FotoAbogada abogada={abogada} tamano="mediana" diferida />
+      <h3 className="mt-4 font-titulos text-2xl font-semibold text-estudio-oscuro">
+        {lawyerName(abogada)}
+      </h3>
+      <p className="text-sm font-medium text-estudio-azul">{abogada.titulo}</p>
+      {hasOwnPage(abogada) && (
+        <>
+          <p className="mt-3 break-words text-slate-700">{abogada.resumen}</p>
+          <a href={lawyerPath(abogada)} className={`mt-3 ${TEXT_LINK}`}>
+            {TEXTOS.inicio.masInformacion}{' '}
+            <span className="sr-only">{moreInfoSuffix(abogada)}</span>
+          </a>
+        </>
+      )}
+    </article>
+  );
+}

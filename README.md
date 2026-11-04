@@ -1,0 +1,335 @@
+# Proyecto: `estudioJuridicoSDD`
+
+Sitio web de un estudio jurídico, configurable para cualquier estudio desde un único archivo de marca, con un modo demo para mostrarlo a posibles clientes (spec 009). Tiene tres partes:
+
+- **Sitio público**: el estudio, sus integrantes, servicios, contacto y WhatsApp.
+- **Panel de administración**: para los integrantes del estudio. Permite cargar causas, partes, movimientos, jurisprudencia y modelos de escritos.
+- **Portal de clientes**: cada cliente ve solo sus propias causas y los movimientos marcados como visibles para él.
+
+## Stack
+
+- **Frontend**: React + Vite + TypeScript + Tailwind 3 (`web/`).
+- **Backend**: NestJS + TypeScript + TypeORM (`api/`).
+- **Base de datos**: MySQL en VPS propio con Easypanel.
+- **Alojamiento**: el frontend se publica como sitio estático en Hostinger, en el dominio del estudio. La API corre en Easypanel, en un subdominio del mismo dominio (por ejemplo, `api.estudio.com`), para que las cookies de sesión funcionen.
+- **Monorepo**: pnpm workspaces.
+- **Tests**: Vitest en `web/` y en `api/`.
+
+## Estructura del proyecto
+
+```
+estudioJuridicoSDD/
+├── AGENTS.md
+├── CLAUDE.md                        # una línea: @AGENTS.md
+├── README.md
+├── package.json                     # scripts de la raíz: dev, test, lint, format
+├── pnpm-workspace.yaml
+├── docs/
+│   ├── constitution.md
+│   └── specs/
+│       ├── _plantilla.md            # plantilla de spec
+│       ├── 001-autenticacion-y-roles/
+│       │   ├── spec.md
+│       │   ├── plan.md
+│       │   └── tasks.md
+│       ├── 002-causas-y-partes/
+│       ├── 003-movimientos/
+│       ├── 004-portal-del-cliente/
+│       ├── 005-jurisprudencia/
+│       ├── 006-modelos-de-escritos/
+│       ├── 007-sitio-publico/
+│       ├── 008-identidad-visual-de-la-aplicacion/
+│       └── 009-demo-y-marca-configurable/
+├── web/                             # React + Vite
+│   ├── public/marca/                # imágenes y tipografía de la marca (spec 009)
+│   └── src/
+│       ├── componentes/             # solo muestran datos y delegan
+│       ├── paginas/
+│       └── servicios/               # reglas, validaciones y llamadas a la API (no importa React)
+│           └── marca.ts             # el archivo de marca: todo lo que identifica al estudio
+└── api/                             # NestJS
+    ├── src/
+    │   ├── autenticacion/
+    │   ├── usuarios/
+    │   ├── causas/
+    │   ├── movimientos/
+    │   ├── jurisprudencia/
+    │   ├── modelos-escritos/
+    │   ├── demo/                    # cuentas de prueba y restablecimiento (spec 009)
+    │   └── migraciones/
+    ├── datos-de-muestra/            # datos ficticios de la demo
+    └── test/                        # tests e2e
+```
+
+La estructura de `web/src` y `api/src` es orientativa. Cada `plan.md` define los módulos concretos que agrega.
+
+## Hoja de ruta de specs
+
+| Spec | Qué cubre | Depende de | Estado |
+|------|-----------|------------|--------|
+| 001-autenticacion-y-roles | Ingreso, sesión, roles, gestión de usuarios (incluye cuentas de clientes) | — | Terminada |
+| 002-causas-y-partes | Alta, edición, listado y búsqueda de causas; partes; vinculación con clientes y abogados | 001 | Terminada |
+| 003-movimientos | Registro e historial de movimientos; visibilidad para el cliente | 002 | Terminada |
+| 004-portal-del-cliente | El cliente ve sus causas y los movimientos visibles | 001, 003 | Terminada |
+| 005-jurisprudencia | Carátula, palabras clave, sumario y búsqueda | 001 | Terminada |
+| 006-modelos-de-escritos | Plantillas con variables completadas con datos de una causa | 002 | Terminada |
+| 007-sitio-publico | Estudio, integrantes, servicios, contacto, WhatsApp | 001, 004 | Terminada |
+| 008-identidad-visual-de-la-aplicacion | Logo, colores, menú lateral y tarjetas en el ingreso, el portal y el panel | 007 | Terminada |
+| 009-demo-y-marca-configurable | Marca en un único archivo, tests sin datos de la marca y modo demo | 001, 007, 008 | Terminada |
+
+Cada spec pasa por el ciclo completo (spec → clarificación → plan → tareas → implementación → validación) antes de empezar la siguiente.
+
+## Uso
+
+| Ruta | Quién accede |
+|------|--------------|
+| `/` y páginas públicas | Cualquier visitante |
+| `/ingresar` | Cualquier visitante |
+| `/cambiar-contrasena` | Cualquier usuario con sesión |
+| `/panel/...` | Roles `admin` y `abogado` |
+| `/panel/usuarios` | `admin` gestiona todas las cuentas; `abogado`, solo las de clientes |
+| `/portal/...` | Rol `cliente` |
+
+No hay registro público: los administradores crean las cuentas de los integrantes, y administradores y abogados crean las de los clientes. El administrador principal se crea con un comando de consola del paquete `api`, que también permite restablecer su contraseña (ver el plan de la spec 001).
+
+Los datos se guardan únicamente en MySQL y solo se accede a ellos a través de la API. El frontend no guarda datos de casos en `localStorage`. La API filtra cada consulta de un cliente por su propio id, así que un cliente nunca ve causas ajenas.
+
+## Desarrollo
+
+Requisitos: Node 24 LTS, pnpm 9 y acceso a dos bases MySQL en Easypanel, una de desarrollo y otra de tests, separadas de la de producción (nunca se usa la de producción para desarrollar ni para tests).
+
+```bash
+pnpm install        # instala las dependencias de web y api
+pnpm dev            # levanta web y api
+pnpm test           # Vitest en web y en api
+pnpm lint           # ESLint
+pnpm format         # Prettier
+```
+
+- Las variables de entorno se documentan en `web/.env.example` y `api/.env.example`. Los archivos `.env` reales no se versionan.
+- El esquema de la base cambia solo mediante migraciones de TypeORM. `synchronize` siempre está en `false`.
+- Una tarea está terminada solo si `pnpm test` y `pnpm lint` pasan sin errores.
+
+## Cambiar de marca
+
+Todo lo que identifica al estudio sale de un único archivo, [`web/src/servicios/marca.ts`](./web/src/servicios/marca.ts) (spec 009):
+
+- el nombre completo y en dos líneas;
+- las integrantes, con su tratamiento ("Dra." o "Dr."), su título profesional, su resumen y su texto;
+- los textos y la dirección de la sección del equipo;
+- el WhatsApp, los emails, la dirección, los horarios y las redes;
+- los colores y la tipografía de los títulos;
+- los textos de la apertura, de los servicios y de los mensajes de WhatsApp, y la leyenda de derechos;
+- las rutas de las imágenes.
+
+Las imágenes de la marca (logo, logo del encabezado, favicon, logo en PNG, imagen para compartir y fotos de las integrantes) y los archivos de la tipografía van en [`web/public/marca/`](./web/public/marca/).
+
+Para pasar a otro estudio:
+
+1. Editá `marca.ts` con los datos del estudio. TypeScript avisa si falta algún dato.
+2. Reemplazá los archivos de `web/public/marca/`. Las fotos se publican sin los datos de la cámara (EXIF).
+3. Corré `pnpm test`. Los tests leen lo esperado del archivo de marca, así que tienen que seguir en verde. Un test falla si:
+   - algún dato de la marca (nombre, teléfonos, emails o colores) quedó escrito en otro archivo de `web/src`, `web/scripts`, `web/index.html` o `api/src`;
+   - el blanco no contrasta 4,5 a 1 con los dos colores.
+
+La estructura del sitio (cuatro servicios y Derecho Laboral con las pestañas Empresas y Trabajadores) es fija: el archivo de marca cambia sus textos, no su cantidad ni sus direcciones.
+
+## Modo demo
+
+El mismo código sirve para la demo y para el sitio de un estudio real. El modo demo está apagado por defecto (spec 009). Encendido:
+
+- La pantalla de ingreso muestra tres cuentas de prueba de los datos de muestra (la administradora, el abogado y la cliente, con la contraseña `Muestra2026`), con un botón que completa el formulario.
+- La api no deja modificar esas tres cuentas: ni su contraseña, ni sus datos, ni desactivarlas.
+- Todas las páginas llevan `noindex`, `robots.txt` responde `Disallow: /` y no se genera `sitemap.xml`.
+- Los datos de muestra se pueden restablecer con un comando, que corre todos los días a las 4:00.
+
+### Encenderlo
+
+- **Web:** construir con `VITE_MODO_DEMO=true` (variables de la construcción en Hostinger, o en `web/.env`).
+- **API:** `MODO_DEMO=true` en las variables del servicio de Easypanel.
+
+Cualquier otro valor, o la variable ausente, lo deja apagado. Un estudio real nunca lleva ninguna de las dos.
+
+### La base de la demo
+
+El restablecimiento borra todos los datos, así que solo corre en una base identificada como la de la demo. Las tres condiciones son:
+
+- `MODO_DEMO=true`;
+- un nombre de base que no contenga "test";
+- la marca de la tabla `base_demo`.
+
+Una vez, con las migraciones aplicadas (`pnpm --filter api migration:run` o al desplegar), desde la consola del servicio de la api en Easypanel:
+
+```bash
+node dist/demo/marcar-base-demo.js        # marca esta base como la de la demo
+node dist/demo/restablecer-demo.js        # vacía las tablas y carga los datos de muestra
+```
+
+En desarrollo: `pnpm --filter api demo:marcar` y `pnpm --filter api demo:restablecer`. Los comandos se niegan, sin tocar nada, si falta alguna condición. La base de los tests e2e nunca se marca.
+
+El restablecimiento:
+
+- vacía todas las tablas (salvo `migraciones` y `base_demo`);
+- carga `api/datos-de-muestra/datos-de-muestra.sql`;
+- corre todas sus fechas hasta el día del restablecimiento, salvo la de los fallos, que son reales;
+- cierra todas las sesiones.
+
+Todo va en una transacción: si algo falla, la base queda como estaba.
+
+### Tarea programada en Easypanel
+
+En el servicio de la api, crear una tarea programada (cron) con:
+
+- **Expresión:** `0 4 * * *`. El servidor de Easypanel está en el huso de Buenos Aires (UTC-3), así que son las 4:00 de Argentina. Si el servidor estuviera en UTC, sería `0 7 * * *`.
+- **Comando:** `node dist/demo/restablecer-demo.js`
+
+El comando termina con código 0 si restableció los datos y con 1 si se negó o falló, con un mensaje en la salida.
+
+## Prompts SDD
+
+Los prompts usan como ejemplo la spec `001-autenticacion-y-roles`. Para las siguientes, cambia el número, el nombre de la carpeta y la idea inicial.
+
+### 1. Setup, constitución y AGENTS.md
+
+**Constitución:**
+
+```text
+Vamos a crear la constitución de un proyecto nuevo: el sitio web de un estudio
+jurídico con páginas públicas, un panel de administración para los integrantes
+del estudio y un portal donde cada cliente sigue solo sus causas. Monorepo pnpm
+con React + Vite + TypeScript en web/ y NestJS + TypeORM en api/, base MySQL.
+
+Proponme un docs/constitution.md con 6 principios innegociables, cortos y
+verificables, que cubran: simplicidad del stack, relación entre spec y código,
+separación entre lógica e interfaz, política de tests, persistencia y
+aislamiento de los datos de cada cliente, e idioma del código y los mensajes.
+Máximo 15 líneas. Espera mi aprobación.
+```
+
+*Genera el [docs/constitution.md](./docs/constitution.md)*
+
+*Escribimos el [AGENTS.md](./AGENTS.md) y el [CLAUDE.md](./CLAUDE.md)*
+
+### 2. Especificación
+
+```text
+NO escribas código en ningún momento. Vamos a redactar la especificación de la
+primera funcionalidad de estudioJuridicoSDD. Lee docs/constitution.md y
+docs/specs/_plantilla.md.
+
+Idea inicial: autenticación y roles. Los integrantes del estudio (administrador
+y abogados) y los clientes ingresan con su cuenta. No hay registro público: el
+administrador crea, edita, desactiva y restablece las cuentas. Cada rol accede
+solo a su parte: el panel para el estudio, el portal para los clientes.
+
+Tu trabajo:
+1. Hazme preguntas de UNA en UNA para eliminar ambigüedades (roles, cómo
+   ingresan los clientes, duración de la sesión, qué pasa con cuentas
+   desactivadas, qué queda fuera del MVP). Máximo 6 preguntas.
+2. Con mis respuestas, genera docs/specs/001-autenticacion-y-roles/spec.md
+   siguiendo la plantilla: contexto y objetivo, usuarios, historias de usuario,
+   requisitos funcionales numerados (RF-x) con criterios de aceptación en
+   notación EARS en español, requisitos no funcionales, casos límite, fuera de
+   alcance, criterios de finalización y dudas abiertas marcadas como
+   [NECESITA ACLARACIÓN].
+3. El QUÉ y el POR QUÉ. Nada de stack, librerías, endpoints, arquitectura ni
+   nombres de archivos: eso irá en el plan.
+```
+
+*Genera el [docs/specs/001-autenticacion-y-roles/spec.md](./docs/specs/001-autenticacion-y-roles/spec.md)*
+
+### 3. Clarificación
+
+```text
+Revisa docs/specs/001-autenticacion-y-roles/spec.md como si fueras un QA muy
+profesional con experiencia en seguridad. Lista:
+(1) ambigüedades restantes,
+(2) contradicciones entre requisitos,
+(3) casos límite no cubiertos,
+(4) conflictos con docs/constitution.md,
+(5) cualquier camino por el que un usuario podría ver o modificar datos que no
+    le corresponden.
+No propongas soluciones todavía: solo detecta. Formato: lista numerada.
+```
+
+### 4. Planificación
+
+```text
+Lee docs/constitution.md y docs/specs/001-autenticacion-y-roles/spec.md.
+NO escribas código. Genera docs/specs/001-autenticacion-y-roles/plan.md con:
+- módulos de NestJS y carpetas de web/ que se agregan o modifican,
+- entidades de TypeORM con sus campos y la migración necesaria,
+- contrato de la API: método, ruta, cuerpo, respuesta, códigos HTTP y roles
+  permitidos de cada endpoint,
+- flujo de la sesión (ingreso, renovación, cierre) en pseudocódigo,
+- rutas y guards del frontend, y qué vive en src/servicios/,
+- dependencias nuevas, cada una justificada con su alternativa descartada,
+- otras decisiones técnicas justificadas, con su alternativa descartada,
+- estrategia de tests: unitarios y e2e con Vitest en api y en web.
+Todo debe respetar la constitución y cubrir todos los RF. Marca qué RF cubre
+cada parte.
+```
+
+*Genera el [docs/specs/001-autenticacion-y-roles/plan.md](./docs/specs/001-autenticacion-y-roles/plan.md)*
+
+### 5. Tareas
+
+```text
+A partir de spec.md y plan.md de docs/specs/001-autenticacion-y-roles/, genera
+tasks.md: tareas pequeñas (máx. 20-30 min cada una), en orden de dependencia,
+separando las de api/ y las de web/. Cada una con los RF que cubre y una línea
+"Hecho cuando:" verificable. Ninguna tarea toca archivos .env ni la base de
+producción. Usa checkboxes.
+```
+
+*Genera el [docs/specs/001-autenticacion-y-roles/tasks.md](./docs/specs/001-autenticacion-y-roles/tasks.md)*
+
+### 6. Implementación
+
+```text
+Implementa SOLO la tarea T2 de docs/specs/001-autenticacion-y-roles/tasks.md,
+siguiendo plan.md, la constitución y AGENTS.md. Escribe primero los tests,
+luego el código. Si necesitas modificar un archivo existente o agregar una
+dependencia no prevista en el plan, pregúntame antes. Ejecuta pnpm test y
+pnpm lint y muéstrame el resultado. Al terminar: marca T2 en tasks.md, indica
+qué RF cubre y PÁRATE. No hagas commit y no empieces T3.
+```
+
+*Genera la implementación dentro de `api/` y `web/`*
+
+### 7. Validación
+
+```text
+Recorre docs/specs/001-autenticacion-y-roles/spec.md requisito por requisito.
+Para cada RF indica: qué test lo cubre y el resultado de ejecutarlo.
+Si algún RF no está cubierto o falla, dilo claramente. Verifica además que
+ningún endpoint del panel responda a un cliente y que ninguna respuesta
+incluya datos de otro usuario. Después comprueba los criterios de finalización
+y dame un veredicto: ¿la spec está cumplida?
+```
+
+### 8. Siguiente spec
+
+```text
+NO escribas código. Pasamos a la spec 002-causas-y-partes. Lee
+docs/constitution.md, docs/specs/_plantilla.md y las specs ya terminadas para
+no contradecirlas.
+
+Idea inicial: los integrantes del estudio dan de alta, editan, listan y buscan
+causas (carátula, número de expediente, juzgado, fuero, estado), registran sus
+partes y vinculan cada causa con sus clientes y con los abogados que
+intervienen.
+
+Sigue el mismo proceso: preguntas de UNA en UNA (máximo 6) y después genera
+docs/specs/002-causas-y-partes/spec.md. Solo el QUÉ y el POR QUÉ.
+```
+
+### 9. Cambios sobre una spec existente
+
+```text
+Nuevo requisito para 003-movimientos: poder corregir un movimiento ya cargado.
+NO toques código. Primero: actualiza docs/specs/003-movimientos/spec.md (nuevo
+RF con EARS + casos límite: ¿quién puede corregirlo? ¿se conserva la versión
+anterior? ¿qué pasa si el movimiento ya era visible para el cliente?) y
+muéstrame el diff de la spec.
+```

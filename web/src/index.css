@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * La tipografía de los títulos (spec 007, RF-3) se declara desde el archivo de marca: Tailwind
+ * declara sus archivos (tailwind.config.js y src/servicios/marca-construccion.ts; spec 009, RF-8).
+ */
