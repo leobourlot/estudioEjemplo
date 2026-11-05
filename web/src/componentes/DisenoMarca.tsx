@@ -79,7 +79,7 @@ export function DisenoMarca({
             alt=""
             width={96}
             height={96}
-            className="h-24 w-24 rounded-lg ring-1 ring-estudio-blanco/20 lg:h-36 lg:w-36"
+            className="h-24 w-24 rounded-lg ring-estudio-blanco/20 lg:h-36 lg:w-36"
           />
           <NombreEstudio centrado className="font-titulos text-xl font-semibold lg:text-2xl" />
         </a>

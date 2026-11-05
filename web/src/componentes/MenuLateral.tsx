@@ -72,7 +72,7 @@ export function MenuLateral({
             alt=""
             width={56}
             height={56}
-            className="h-36 w-36 rounded-lg ring-1 ring-estudio-blanco/20"
+            className="h-36 w-36 rounded-lg ring-estudio-blanco/20"
           />
           <NombreEstudio centrado className="font-titulos text-xl font-semibold" />
         </Link>
