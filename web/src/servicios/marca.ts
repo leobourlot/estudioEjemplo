@@ -21,8 +21,8 @@ export const MARCA: Marca = {
   nombreLineas: ['Lucero | Ibarra', 'Abogados'],
 
   colores: {
-    oscuro: '#22303C',
-    azul: '#3E5C76',
+    oscuro: '#022c22',
+    claro: '#047857',
     blanco: '#FAFCFD',
   },
 

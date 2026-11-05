@@ -15,8 +15,9 @@ const badgeClass = 'rounded px-2 py-0.5 text-xs font-medium';
 /**
  * Un movimiento del historial (RF-24): fecha, tipo, descripción recortada con "Ver completa",
  * si es visible u oculto para el cliente, si tiene texto para el cliente, su autor y las
- * etiquetas "Anulado" y "Fecha futura". Va en su propia tarjeta, con una barra a la izquierda azul
- * si es visible para el cliente y gris si está oculto, junto a su etiqueta (spec 008, RF-23).
+ * etiquetas "Anulado" y "Fecha futura". Va en su propia tarjeta, con una barra a la izquierda del
+ * color claro de la marca si es visible para el cliente y gris si está oculto, junto a su
+ * etiqueta (spec 008, RF-23).
  */
 export function FilaMovimiento({
   movimiento,
@@ -33,7 +34,7 @@ export function FilaMovimiento({
   return (
     <li
       aria-label={`${fecha} ${tipo}`}
-      className={`space-y-2 border-l-4 p-5 ${CARD} ${movimiento.visible ? 'border-l-estudio-azul' : 'border-l-slate-400'} ${movimiento.anulado ? 'opacity-75' : ''}`}
+      className={`space-y-2 border-l-4 p-5 ${CARD} ${movimiento.visible ? 'border-l-estudio-claro' : 'border-l-slate-400'} ${movimiento.anulado ? 'opacity-75' : ''}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-slate-800">{fecha}</span>

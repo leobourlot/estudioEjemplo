@@ -36,7 +36,7 @@ export function SitioAbogada({ abogada }: SitioAbogadaProps) {
               <h1 className="break-words font-titulos text-4xl font-semibold text-estudio-oscuro">
                 {lawyerName(abogada)}
               </h1>
-              <p className="mt-1 font-medium text-estudio-azul">{abogada.titulo}</p>
+              <p className="mt-1 font-medium text-estudio-claro">{abogada.titulo}</p>
             </div>
           </div>
           <Aparecer className="mt-8 space-y-4 text-slate-700">

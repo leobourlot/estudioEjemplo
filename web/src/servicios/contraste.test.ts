@@ -25,11 +25,11 @@ describe('contrastRatio (fórmula de WCAG 2)', () => {
 });
 
 describe('colores de la marca (spec 009, RF-9)', () => {
-  const { oscuro, azul, blanco } = MARCA.colores;
+  const { oscuro, claro, blanco } = MARCA.colores;
 
   it.each([
     ['oscuro', oscuro],
-    ['azul', azul],
+    ['claro', claro],
   ])('el blanco contrasta al menos 4,5 a 1 con el %s', (_nombre, color) => {
     expect(
       contrastRatio(blanco, color),

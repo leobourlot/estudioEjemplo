@@ -31,7 +31,7 @@ Plan técnico de la spec 009. Cambia `web/` (la marca, los tests, el ingreso y e
 export const MARCA: Marca = {
   nombre: 'Lucero | Ibarra - Abogados',
   nombreLineas: ['Lucero | Ibarra', 'Abogados'],
-  colores: { oscuro: '#22303C', azul: '#3E5C76', blanco: '#FAFCFD' },
+  colores: { oscuro: '#22303C', claro: '#3E5C76', blanco: '#FAFCFD' },
   tipografiaTitulos: {
     familia: 'Cormorant Garamond',
     reemplazo: ['Georgia', 'serif'],

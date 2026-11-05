@@ -24,7 +24,7 @@ interface PieSitioProps {
 // El logo de quien diseñó el sitio no es de la marca del estudio (spec 009, RF-10).
 const BOURDER_WEB_LOGO = '/diseno/bourder-web.svg';
 
-/** Enlace sobre el azul oscuro: claro, con foco blanco y al menos 44 px de alto. */
+/** Enlace sobre el color oscuro: claro, con foco blanco y al menos 44 px de alto. */
 const LINK =
   'inline-flex min-h-11 items-center gap-2 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-estudio-blanco';
 

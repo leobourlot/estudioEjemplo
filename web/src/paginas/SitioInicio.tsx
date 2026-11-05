@@ -42,7 +42,7 @@ export function SitioInicio() {
     <DisenoSitio mensaje={PAGE.mensaje}>
       <section
         aria-labelledby="inicio-titulo"
-        className="relative overflow-hidden bg-gradient-to-r from-estudio-oscuro to-estudio-azul px-4 py-16 text-estudio-blanco"
+        className="relative overflow-hidden bg-gradient-to-r from-estudio-oscuro to-estudio-claro px-4 py-16 text-estudio-blanco"
       >
         <BalanzaDecorativa className="absolute top-1/2 -right-12 aspect-square h-[96%] -translate-y-1/2 opacity-[0.50] sm:right-4 sm:opacity-[0.50] lg:right-[18%] lg:opacity-[0.50]" />
         <div className="relative mx-auto max-w-5xl">
@@ -56,7 +56,7 @@ export function SitioInicio() {
       <section id="portal" aria-labelledby="portal-titulo" className="bg-white px-4 py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[1fr_2fr]">
           <Aparecer>
-            <p className="text-sm font-semibold uppercase tracking-wide text-estudio-azul">
+            <p className="text-sm font-semibold uppercase tracking-wide text-estudio-claro">
               {TEXTOS.portal.leyenda}
             </p>
             <h2 id="portal-titulo" tabIndex={-1} className={`mt-2 ${SECTION_TITLE}`}>

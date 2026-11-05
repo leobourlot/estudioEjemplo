@@ -61,11 +61,11 @@ export interface ImagenMarca {
 }
 
 export interface ColoresMarca {
-  /** Azul oscuro: menú, botones principales y comienzo del degradado. */
+  /** Oscuro: menú, botones principales y comienzo del degradado. */
   oscuro: string;
-  /** Azul: enlaces, foco y final del degradado. */
-  azul: string;
-  /** Blanco: el texto sobre los dos azules. */
+  /** Claro: enlaces, foco y final del degradado. */
+  claro: string;
+  /** Blanco: el texto sobre el oscuro y el claro. */
   blanco: string;
 }
 

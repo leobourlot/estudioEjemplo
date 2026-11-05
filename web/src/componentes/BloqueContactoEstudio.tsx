@@ -23,7 +23,7 @@ const EXTERNAL = { target: '_blank', rel: 'noopener noreferrer' } as const;
  * estudio va sin subrayado, salvo al pasar el puntero: todos los renglones son enlaces y cada uno
  * lleva su ícono, así que se distinguen igual.
  */
-const LINK = `inline-flex items-center gap-2 rounded font-medium text-estudio-azul underline-offset-4 transition-colors hover:text-estudio-oscuro hover:underline motion-reduce:transition-none ${FOCUS_RING}`;
+const LINK = `inline-flex items-center gap-2 rounded font-medium text-estudio-claro underline-offset-4 transition-colors hover:text-estudio-oscuro hover:underline motion-reduce:transition-none ${FOCUS_RING}`;
 
 /**
  * Datos de contacto del estudio al pie de las pantallas del portal, salvo la de cambio de

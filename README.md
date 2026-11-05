@@ -126,7 +126,7 @@ Las imágenes de la marca (logo, logo del encabezado, favicon, logo en PNG, imag
 
 Para pasar a otro estudio:
 
-1. Editá `marca.ts` con los datos del estudio. TypeScript avisa si falta algún dato.
+1. Editá `marca.ts` con los datos del estudio. TypeScript avisa si falta algún dato. Los colores y la tipografía se leen al levantar `pnpm dev`: después de cambiarlos, cortalo y volvé a levantarlo para verlos. Los colores del logo y del favicon están dentro de sus archivos, así que cambian con el paso 2.
 2. Reemplazá los archivos de `web/public/marca/`. Las fotos se publican sin los datos de la cámara (EXIF).
 3. Corré `pnpm test`. Los tests leen lo esperado del archivo de marca, así que tienen que seguir en verde. Un test falla si:
    - algún dato de la marca (nombre, teléfonos, emails o colores) quedó escrito en otro archivo de `web/src`, `web/scripts`, `web/index.html` o `api/src`;

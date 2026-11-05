@@ -16,8 +16,11 @@ function brandInIndexHtml(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), brandInIndexHtml()],
+  // Los tests no leen web/.env: dan lo mismo con cualquier configuración local (modo demo
+  // prendido, URL de la api cargada). En desarrollo y al construir, Vite lo lee como siempre.
+  envDir: mode === 'test' ? false : undefined,
   // Año de la leyenda de derechos del pie de página: el de la publicación del sitio (spec 007,
   // RF-44). Es el mismo en el build del navegador y en el de Node, así el HTML prerenderizado y la
   // hidratación coinciden.
@@ -34,4 +37,4 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/configuracion-tests.ts'],
   },
-});
+}));

@@ -27,7 +27,7 @@ Este sistema nació para un estudio en particular, y su identidad está repartid
   - Las integrantes, en orden (RF-5).
   - Los textos del equipo: el nombre de la sección en el menú, su título, el acceso para volver a ella y la palabra de sus direcciones (RF-6).
   - Los WhatsApp, los emails, la dirección, los días y horarios de atención y las redes (spec 007, RF-22).
-  - Los colores oscuro, azul y blanco, y la tipografía de los títulos (RF-8).
+  - Los colores oscuro, claro y blanco, y la tipografía de los títulos (RF-8).
   - Las rutas del logo, del favicon, de la imagen para compartir, de las fotos y de los archivos de la tipografía (RF-3).
   - Los textos de la apertura, de los servicios y de sus pestañas, los mensajes de WhatsApp de cada página y la línea de derechos del pie de página (spec 007, T-1 a T-12, T-15 y T-18).
 - RF-2: EL SISTEMA usa los datos del archivo de marca en todos los lugares donde aparece el estudio: el sitio público, la pantalla de ingreso, la de cambio de contraseña, el portal, el panel, el título y la descripción de cada página (spec 007, T-16), la vista previa al compartir, los datos para buscadores, la página que carga la aplicación, el favicon y los colores y la tipografía de toda la interfaz. Ningún otro archivo del código repite un dato de la marca (RF-13).
@@ -46,8 +46,8 @@ Este sistema nació para un estudio en particular, y su identidad está repartid
 - RF-7: EL SISTEMA muestra cada WhatsApp y cada email con el nombre que indica el archivo de marca, que puede ser el de una integrante o el del estudio (spec 007, RF-22). SI el archivo de marca tiene un solo WhatsApp, ENTONCES el botón de WhatsApp abre directamente la conversación, con el mensaje de la página (spec 007, RF-27), sin el menú de opciones de la spec 007 (RF-26). Con dos o más, el botón abre el menú como hoy. En los dos casos, el botón conserva su nombre para el lector de pantalla y su ubicación, y los enlaces del bloque de contacto, del pie y de la pantalla de ingreso siguen como hoy.
 
 ### Colores y tipografía
-- RF-8: EL SISTEMA toma del archivo de marca los tres colores del estudio (oscuro, azul y blanco) y la tipografía de los títulos (su nombre, sus archivos y la de reemplazo mientras carga). Todos los usos de esos colores y de esa tipografía en la interfaz, en los íconos que llevan el blanco del estudio y en la cabecera de las páginas salen de ahí. Los tonos suaves de las specs 007 y 008 (fondos y tarjetas) se siguen derivando de esos colores. Los colores propios de las marcas de otras empresas (WhatsApp, Google Maps y las redes, spec 007, RF-23) no son de la marca del estudio y no cambian.
-- RF-9: SI el blanco del estudio contrasta menos de 4,5 a 1 con el oscuro o con el azul, ENTONCES los tests fallan e indican qué par de colores no alcanza, para que una marca nueva no rompa la accesibilidad de las specs 007 y 008.
+- RF-8: EL SISTEMA toma del archivo de marca los tres colores del estudio (oscuro, claro y blanco) y la tipografía de los títulos (su nombre, sus archivos y la de reemplazo mientras carga). Todos los usos de esos colores y de esa tipografía en la interfaz, en los íconos que llevan el blanco del estudio y en la cabecera de las páginas salen de ahí. Los tonos suaves de las specs 007 y 008 (fondos y tarjetas) se siguen derivando de esos colores. Los colores propios de las marcas de otras empresas (WhatsApp, Google Maps y las redes, spec 007, RF-23) no son de la marca del estudio y no cambian.
+- RF-9: SI el blanco del estudio contrasta menos de 4,5 a 1 con el oscuro o con el claro, ENTONCES los tests fallan e indican qué par de colores no alcanza, para que una marca nueva no rompa la accesibilidad de las specs 007 y 008.
 
 ### Textos del sitio
 - RF-10: EL SISTEMA arma el título de cada página y de cada pantalla con el nombre del estudio del archivo de marca, como indica la spec 007 (T-16), y la línea de derechos del pie con el nombre del estudio y el año en que se publicó el sitio (spec 007, T-18). La leyenda "Diseñado por" y el enlace a Bourder Web no son de la marca del estudio y no cambian.
@@ -187,7 +187,7 @@ Ficticia. Las integrantes son personas inventadas de los datos de muestra; el Wh
 
 ### Colores y tipografía
 - Oscuro: #22303C (gris pizarra)
-- Azul: #3E5C76 (azul acero)
+- Claro: #3E5C76 (azul acero)
 - Blanco: #FAFCFD
 - Títulos: Cormorant Garamond, con Georgia mientras carga.
 

@@ -112,7 +112,7 @@ export function MaquetaPortal() {
         <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
         <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
       </div>
-      <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-estudio-oscuro to-estudio-azul px-4 py-2 text-estudio-blanco">
+      <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-estudio-oscuro to-estudio-claro px-4 py-2 text-estudio-blanco">
         <span className="font-titulos text-lg font-semibold">{TEXTOS.portal.leyenda}</span>
         <span className="rounded-full bg-estudio-blanco/20 px-2 py-0.5 text-xs font-medium">
           {TEXTOS.portal.ejemplo}
@@ -194,7 +194,7 @@ export function MaquetaPortal() {
             <div className="relative">
               <p
                 data-boton=""
-                className={`flex h-9 items-center justify-center rounded text-sm font-medium text-estudio-blanco transition-transform ${frame.presionado ? 'scale-95 bg-estudio-azul' : 'bg-estudio-oscuro'}`}
+                className={`flex h-9 items-center justify-center rounded text-sm font-medium text-estudio-blanco transition-transform ${frame.presionado ? 'scale-95 bg-estudio-claro' : 'bg-estudio-oscuro'}`}
               >
                 {INGRESO_EJEMPLO.boton}
               </p>

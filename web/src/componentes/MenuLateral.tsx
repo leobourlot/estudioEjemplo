@@ -32,7 +32,7 @@ interface MenuLateralProps {
 const OPTION = `flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors motion-reduce:transition-none ${FOCUS_RING_ON_DARK}`;
 
 /** La opción marcada: fondo más claro, barra a la izquierda y negrita (RF-7). */
-const ACTIVE_OPTION = `${OPTION} relative bg-estudio-azul font-semibold text-estudio-blanco before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r before:bg-estudio-blanco`;
+const ACTIVE_OPTION = `${OPTION} relative bg-estudio-claro font-semibold text-estudio-blanco before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r before:bg-estudio-blanco`;
 
 const INACTIVE_OPTION = `${OPTION} text-slate-300 hover:bg-estudio-blanco/10 hover:text-estudio-blanco`;
 
@@ -60,7 +60,7 @@ export function MenuLateral({
   return (
     <aside
       id={MENU_ID}
-      className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-gradient-to-b from-estudio-oscuro to-estudio-azul text-slate-300 shadow-xl transition-[transform,visibility] duration-300 motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-64 lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:shadow-none ${plegado}`}
+      className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-gradient-to-b from-estudio-oscuro to-estudio-claro text-slate-300 shadow-xl transition-[transform,visibility] duration-300 motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-64 lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:shadow-none ${plegado}`}
     >
       <div className="flex items-start justify-between gap-2 px-5 pt-6 pb-3">
         <Link

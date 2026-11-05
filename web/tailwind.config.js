@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       // Colores y tipografía de los títulos de la marca (spec 007, RF-3; spec 009, RF-8), del
-      // archivo de marca. El logo va en degradado hacia la derecha, de `oscuro` a `azul`:
-      // bg-gradient-to-r from-estudio-oscuro to-estudio-azul.
+      // archivo de marca. El logo va en degradado hacia la derecha, de `oscuro` a `claro`:
+      // bg-gradient-to-r from-estudio-oscuro to-estudio-claro.
       fontFamily: {
         titulos: titleFontStack(MARCA.tipografiaTitulos),
       },

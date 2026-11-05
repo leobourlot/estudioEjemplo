@@ -6,7 +6,8 @@ import { FOCUS_RING_ON_DARK } from './estilos-aplicacion';
 import { IconoRedColor } from './IconosRedes';
 import { NombreEstudio } from './NombreEstudio';
 
-const BRAND_BACKGROUND = 'bg-gradient-to-r from-estudio-oscuro to-estudio-azul text-estudio-blanco';
+const BRAND_BACKGROUND =
+  'bg-gradient-to-r from-estudio-oscuro to-estudio-claro text-estudio-blanco';
 
 interface DisenoMarcaProps {
   /** Lo que va en el medio del panel de la marca, como el título del ingreso. */
@@ -86,7 +87,7 @@ export function DisenoMarca({
       </div>
 
       <main className="flex flex-col items-center justify-center px-4 py-8 pb-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pb-8">
-        <AparecerAlCargar className="w-full max-w-sm rounded-xl border border-slate-300 bg-estudio-azul/10 p-8 shadow-sm">
+        <AparecerAlCargar className="w-full max-w-sm rounded-xl border border-slate-300 bg-estudio-claro/10 p-8 shadow-sm">
           {children}
         </AparecerAlCargar>
       </main>

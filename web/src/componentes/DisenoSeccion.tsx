@@ -94,7 +94,7 @@ export function DisenoSeccion({ section, footer }: DisenoSeccionProps) {
   }
 
   return (
-    <div className="min-h-screen bg-estudio-azul/15 lg:flex">
+    <div className="min-h-screen bg-estudio-claro/15 lg:flex">
       <a
         href="#contenido"
         className="sr-only z-50 rounded-md bg-estudio-blanco px-4 py-2 font-medium text-estudio-oscuro focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
@@ -104,7 +104,7 @@ export function DisenoSeccion({ section, footer }: DisenoSeccionProps) {
 
       <header
         inert={abierto}
-        className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-r from-estudio-oscuro to-estudio-azul px-4 py-2 text-estudio-blanco lg:hidden"
+        className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-r from-estudio-oscuro to-estudio-claro px-4 py-2 text-estudio-blanco lg:hidden"
       >
         <Link
           to={SECTION_HOMES[section]}

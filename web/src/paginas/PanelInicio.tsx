@@ -27,7 +27,7 @@ export function PanelInicio() {
               to={option.to}
               className={`flex min-h-20 items-center gap-4 p-5 font-titulos text-xl font-semibold text-estudio-oscuro transition motion-safe:hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none ${CARD} ${FOCUS_RING}`}
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-estudio-azul/10">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-estudio-claro/10">
                 <IconoMenu nombre={option.icon} className="h-6 w-6" />
               </span>
               {option.label}

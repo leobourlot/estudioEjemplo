@@ -91,11 +91,11 @@ describe('FilaMovimiento (RF-24, RF-36)', () => {
 });
 
 describe('FilaMovimiento con la identidad del estudio (spec 008, RF-23)', () => {
-  it('un movimiento visible va en su tarjeta con la barra azul, junto a la etiqueta "Visible"', () => {
+  it('un movimiento visible va en su tarjeta con la barra del color claro, junto a la etiqueta "Visible"', () => {
     const row = renderRow({ visible: true });
 
     expect(row.className).toContain('border-l-4');
-    expect(row.className).toContain('border-l-estudio-azul');
+    expect(row.className).toContain('border-l-estudio-claro');
     expect(within(row).getByText('Visible')).toBeTruthy();
   });
 

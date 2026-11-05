@@ -17,7 +17,7 @@ export function BloquesTexto({ bloques }: BloquesTextoProps) {
             {bloque.texto}
           </p>
         ) : (
-          <ul key={index} className="list-disc space-y-2 pl-6 marker:text-estudio-azul">
+          <ul key={index} className="list-disc space-y-2 pl-6 marker:text-estudio-claro">
             {bloque.items.map((item) => (
               <li key={item} className="break-words">
                 {item}

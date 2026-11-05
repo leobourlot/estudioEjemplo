@@ -31,7 +31,7 @@ Reglas para todas las tareas:
   - `servicios/contraste.ts` y su test.
 
   Hecho cuando:
-  - `contraste.test.ts` verifica la fórmula con pares conocidos (negro y blanco, 21 a 1) y que el blanco de `MARCA` contrasta 4,5 a 1 o más con el oscuro y con el azul.
+  - `contraste.test.ts` verifica la fórmula con pares conocidos (negro y blanco, 21 a 1) y que el blanco de `MARCA` contrasta 4,5 a 1 o más con el oscuro y con el claro.
   - `marca.ts` no importa nada salvo `import type`.
 
 - [x] **T2 — Los servicios leen de la marca** [RF-1, RF-2, RF-5, RF-6, RF-10, RF-11, RF-14] **(modifica existente: `servicios/datos-estudio.ts`, `contenido-sitio.ts`, `rutas-sitio.ts`, `presentacion-sitio.ts`, `redes-de-muestra.ts`, sus tests `datos-estudio.test.ts`, `contenido-sitio.test.ts`, `rutas-sitio.test.ts`, `presentacion-sitio.test.ts`, `formulario-modelo.test.ts`, y `pruebas/anexo-spec-007.ts`)**
@@ -246,3 +246,5 @@ Reglas para todas las tareas:
 - T15: `api/src/base-de-datos/opciones-base-de-datos.spec.ts` suma `MODO_DEMO: false` a su entorno de prueba, porque el tipo `Environment` tiene la variable nueva.
 - Punto de control de T18, decisión del usuario del 03/11/2026: los e2e cuyo `beforeAll` no tiene un límite propio usan el de vitest (10 s). Contra la base remota, preparar la base a veces tarda más, y con la migración de `base_demo` pasa más seguido. Cuando uno se corta, el archivo siguiente choca con la migración que quedó corriendo ("Table 'base_demo' already exists"). No se cambian los tiempos de espera: queda anotado en `validacion.md`.
 - T22, autorizado por el usuario el 03/11/2026: el `name` del `package.json` de la raíz pasa de `estudio-sabalette` a `estudio-juridico-sdd` (RF-12).
+- 04/11/2026, pedido por el usuario: el color `azul` de la marca pasa a llamarse `claro` (`colores.claro` en `marca.ts` y `tipos-marca.ts`, clases `estudio-claro`), porque con una marca configurable puede no ser azul. Cambia solo el nombre, no el valor. Se actualizaron RF-8, RF-9 y el anexo A de la spec, el plan y la validación; las specs 007 y 008 siguen nombrando `estudio-azul`, como estaba al escribirlas. Los colores y la tipografía se leen al levantar `pnpm dev`: para ver un cambio de color hay que reiniciarlo (Tailwind carga su configuración una sola vez por proceso).
+- 04/11/2026, pedido por el usuario: los tests de web dejan de leer `web/.env` (`envDir: false` en modo `test`, en `web/vite.config.ts`). Con el modo demo prendido o la URL de la api cargada en el `.env` local, fallaban `modo-demo.test.ts`, `PaginaIngreso.test.tsx` y `RutasSitio.test.tsx`. En desarrollo y al construir, Vite sigue leyendo `.env`. El README avisa, en "Cambiar de marca", que hay que reiniciar `pnpm dev` después de cambiar colores o tipografía.

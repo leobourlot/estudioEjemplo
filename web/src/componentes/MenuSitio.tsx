@@ -14,7 +14,7 @@ const LINKS = [
   { href: '#contacto', label: TEXTOS.menu.contacto },
 ] as const;
 
-const LINK_CLASS = `inline-flex min-h-11 items-center px-2 font-medium text-estudio-oscuro hover:text-estudio-azul ${FOCUS_RING}`;
+const LINK_CLASS = `inline-flex min-h-11 items-center px-2 font-medium text-estudio-oscuro hover:text-estudio-claro ${FOCUS_RING}`;
 
 interface LinksProps {
   onChoose?: () => void;

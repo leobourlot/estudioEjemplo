@@ -34,7 +34,7 @@ function brandLiterals(): string[] {
     ...contacto.whatsapps.flatMap((whatsapp) => [whatsapp.numero, whatsapp.visible]),
     ...contacto.emails.map((email) => email.email),
     colores.oscuro,
-    colores.azul,
+    colores.claro,
     colores.blanco,
   ];
 }
@@ -86,14 +86,14 @@ describe('marca única (spec 009, RF-13)', () => {
   it('detecta un dato de la marca escrito a mano, sin importar las mayúsculas (caso de control)', () => {
     const files = new Map([
       ['web/src/componentes/Ejemplo.tsx', `<p>${MARCA.nombre.toUpperCase()}</p>`],
-      ['api/src/ejemplo.ts', `const color = '${MARCA.colores.azul.toLowerCase()}';`],
+      ['api/src/ejemplo.ts', `const color = '${MARCA.colores.claro.toLowerCase()}';`],
       ['web/src/componentes/Limpio.tsx', '<p>Sin datos de la marca</p>'],
     ]);
 
     expect(findBrandLiterals(files, brandLiterals())).toEqual([
       `web/src/componentes/Ejemplo.tsx: ${MARCA.nombre}`,
       `web/src/componentes/Ejemplo.tsx: ${MARCA.nombreLineas[0]}`,
-      `api/src/ejemplo.ts: ${MARCA.colores.azul}`,
+      `api/src/ejemplo.ts: ${MARCA.colores.claro}`,
     ]);
   });
 });

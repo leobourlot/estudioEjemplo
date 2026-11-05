@@ -20,7 +20,7 @@ type Estado = 'cargando' | 'lista' | 'error';
 
 /**
  * La foto de una abogada en un círculo, la misma en la tarjeta y en su página (spec 007, RF-21).
- * Debajo siempre están sus iniciales, en blanco sobre el azul del logo: se ven mientras no hay
+ * Debajo siempre están sus iniciales, en blanco sobre el color oscuro de la marca: se ven mientras no hay
  * foto, mientras carga y si no se puede cargar. La foto tiene ancho y alto fijos, así que al
  * aparecer no mueve nada. Las iniciales no se anuncian, porque el nombre está al lado.
  */

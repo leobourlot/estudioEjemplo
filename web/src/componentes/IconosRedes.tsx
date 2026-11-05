@@ -5,7 +5,7 @@ import { useIdSvg } from './useIdSvg';
  * Íconos propios de WhatsApp y de las redes sociales del contacto y del pie (spec 007, RF-23 y
  * RF-44), en SVG, sin bibliotecas (principio 1). Son decorativos: el nombre de la red va escrito
  * al lado. `IconoRedColor`, el del contacto y el pie, lleva los colores de cada red, con un
- * contorno blanco que sigue el dibujo para que se distinga sobre los azules del estudio.
+ * contorno blanco que sigue el dibujo para que se distinga sobre los colores del estudio.
  * `IconoRed` toma el color del texto: queda para las redes sin colores propios.
  */
 

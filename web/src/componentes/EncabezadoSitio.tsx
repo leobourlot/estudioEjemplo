@@ -30,7 +30,7 @@ export function EncabezadoSitio({ consultarSesion }: EncabezadoSitioProps) {
           className={`flex min-w-0 items-center gap-3 rounded font-semibold text-estudio-oscuro ${FOCUS_RING}`}
         >
           <img
-            src={MARCA.archivos.logoEncabezado.ruta}
+            src={MARCA.archivos.logo.ruta}
             alt=""
             width={MARCA.archivos.logoEncabezado.ancho}
             height={MARCA.archivos.logoEncabezado.alto}
