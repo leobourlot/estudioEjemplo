@@ -25,7 +25,7 @@ export async function clearMovementTables(app: NestExpressApplication): Promise<
 }
 
 type MovementTestData = Partial<
-  Omit<Movimiento, 'id' | 'causa' | 'creadoPor' | 'modificadoPor' | 'cambios'>
+  Omit<Movimiento, 'id' | 'causa' | 'creadoPor' | 'modificadoPor' | 'cambios' | 'pdf'>
 > & {
   causaId: number;
   creadoPorId: number;
@@ -55,7 +55,8 @@ export async function createTestMovimiento(
     accion: 'carga',
     usuarioId: movimiento.creadoPorId,
     fechaHora: movimiento.creadoEn,
-    cambios: loadChanges(movimiento),
+    // Se crea sin PDF; los tests de la spec 010 lo adjuntan por la api.
+    cambios: loadChanges({ ...movimiento, pdf: null }),
   });
   return movimiento;
 }

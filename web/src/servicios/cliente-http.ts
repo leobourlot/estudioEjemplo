@@ -65,43 +65,64 @@ export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClient
     return refreshInProgress;
   }
 
-  async function send(method: string, path: string, body?: unknown): Promise<Response> {
+  /**
+   * El cuerpo de un pedido: JSON o un formulario con archivo (spec 010, plan 010, D2). Con un
+   * FormData no se fija Content-Type: el navegador lo pone con su separador.
+   */
+  type Payload = { json: unknown } | { form: FormData } | undefined;
+
+  async function send(method: string, path: string, payload: Payload): Promise<Response> {
     notifyActivity();
+    const json = payload !== undefined && 'json' in payload;
     try {
       return await fetchFn(`${baseUrl}/api${path}`, {
         method,
         credentials: 'include',
-        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        headers: json ? { 'Content-Type': 'application/json' } : undefined,
+        body: payload === undefined ? undefined : json ? JSON.stringify(payload.json) : payload.form,
       });
     } catch {
       throw new ApiError(0, [NETWORK_ERROR_MESSAGE]);
     }
   }
 
-  async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    let response = await send(method, path, body);
+  async function request<T>(
+    method: string,
+    path: string,
+    payload: Payload,
+    read: (response: Response) => Promise<T> = readJson,
+  ): Promise<T> {
+    let response = await send(method, path, payload);
 
     if (response.status === 401 && !PATHS_WITHOUT_REFRESH.includes(path)) {
       const refresh = await refreshOnce();
       if (refresh === 'network-error') throw new ApiError(0, [NETWORK_ERROR_MESSAGE]);
       if (refresh === 'renewed') {
-        response = await send(method, path, body);
+        response = await send(method, path, payload);
         // Un 401 incluso con la sesión recién renovada: la sesión ya no sirve.
         if (response.status === 401) notifySessionClosed();
       }
     }
 
     if (!response.ok) throw await toApiError(response);
-    if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    return read(response);
   }
 
+  const asJson = (body: unknown): Payload => (body === undefined ? undefined : { json: body });
+
   return {
-    get: <T>(path: string) => request<T>('GET', path),
-    post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-    put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-    patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+    get: <T>(path: string) => request<T>('GET', path, undefined),
+    post: <T>(path: string, body?: unknown) => request<T>('POST', path, asJson(body)),
+    put: <T>(path: string, body?: unknown) => request<T>('PUT', path, asJson(body)),
+    patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, asJson(body)),
+    /**
+     * Un formulario con archivo, `datos` y `pdf` (spec 010, plan 010, D2), con la misma
+     * renovación ante un 401: el mismo FormData se puede reenviar.
+     */
+    sendForm: <T>(method: 'POST' | 'PATCH', path: string, form: FormData) =>
+      request<T>(method, path, { form }),
+    /** Un archivo, con el nombre que da la api en Content-Disposition (plan 010, D4 y D5). */
+    getFile: (path: string) => request<ArchivoDescargado>('GET', path, undefined, readFile),
     /** Avisa cuando la sesión venció o se cerró y no se pudo renovar. Devuelve cómo dejar de escuchar. */
     onSessionClosed(listener: () => void): () => void {
       sessionClosedListeners.add(listener);
@@ -116,6 +137,28 @@ export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClient
       return () => activityListeners.delete(listener);
     },
   };
+}
+
+/** Un archivo que entregó la api (spec 010, RF-28). */
+export interface ArchivoDescargado {
+  blob: Blob;
+  /** El nombre de Content-Disposition, o null si no vino. */
+  nombre: string | null;
+}
+
+async function readJson<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+/** El nombre de `attachment; filename="…"`. La api lo arma en ASCII, sin codificar (RF-7). */
+function fileNameOf(response: Response): string | null {
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  return /filename="([^"]+)"/.exec(disposition)?.[1] ?? null;
+}
+
+async function readFile(response: Response): Promise<ArchivoDescargado> {
+  return { blob: await response.blob(), nombre: fileNameOf(response) };
 }
 
 async function toApiError(response: Response): Promise<ApiError> {

@@ -7,6 +7,7 @@ import type { MovimientoClientePage } from '../movimientos/visibilidad-cliente.s
 import { MOVIMIENTOS_MESSAGES } from '../movimientos/movimientos.service.js';
 import { todayInBuenosAires } from '../movimientos/reglas-movimientos.js';
 import { ClientVisibilityService } from '../movimientos/visibilidad-cliente.service.js';
+import { PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
 import {
   type CausaPortalDetalle,
   type CausaPortalResumen,
@@ -103,6 +104,21 @@ export class PortalService {
       where: { id: causaId },
     });
     return toMovimientoClienteDetalle(movimiento, causa);
+  }
+
+  /**
+   * El PDF de un movimiento, si el cliente puede verlo (spec 010, RF-33). En cualquier otro caso
+   * (causa ajena, inexistente o desactivada, movimiento oculto, anulado, inexistente o de otra
+   * causa, sin PDF o con el PDF oculto) responde siempre el mismo 404 (RF-37).
+   */
+  async getPdf(
+    clienteId: number,
+    causaId: number,
+    movimientoId: number,
+  ): Promise<{ contenido: Buffer; nombre: string }> {
+    const pdf = await this.visibility.findVisiblePdf(clienteId, causaId, movimientoId);
+    if (!pdf) throw new NotFoundException(PDF_MESSAGES.notFound);
+    return pdf;
   }
 
   private async assertCanSeeCausa(clienteId: number, causaId: number): Promise<void> {

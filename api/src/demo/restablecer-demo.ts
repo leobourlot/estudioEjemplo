@@ -7,12 +7,12 @@ import { prepareSampleScript } from './script-datos-de-muestra.js';
 
 /**
  * Comando de consola: restablece los datos de muestra de la demo (spec 009, RF-20 a RF-24; plan
- * 009, D7). Lo corre una tarea programada de Easypanel todos los días a las 4:00 de Argentina.
+ * 009, D7). Lo corre el cron del VPS todos los días a las 4:00 de Argentina, con docker exec.
  * Se niega, sin conectarse, con el modo demo apagado o en una base de tests, y se niega, sin
  * tocar nada, si la base no tiene la marca de la demo. Termina con 0 si restableció los datos y
  * con 1 si no.
  * Desarrollo: `pnpm --filter api demo:restablecer`.
- * Easypanel: `node dist/demo/restablecer-demo.js`.
+ * Easypanel: `node dist/demo/restablecer-demo.js`, desde la consola o los Scripts del servicio.
  */
 
 // Desde dist/demo/ (y desde src/demo/), el SQL está en api/datos-de-muestra/; en la imagen de

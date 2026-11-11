@@ -33,6 +33,17 @@ export interface MovimientoResumen {
   esFechaFutura: boolean;
   creadoPor: AutorResumen;
   creadoEn: Date;
+  /** Si tiene PDF y si es visible para el cliente; null si no tiene (spec 010, RF-30). */
+  pdf: { visible: boolean } | null;
+}
+
+/** El PDF en la consulta de un movimiento (spec 010, RF-31, RF-40). Nunca su contenido. */
+export interface PdfDetalle {
+  codigo: string;
+  tamano: number;
+  visible: boolean;
+  subidoPor: AutorResumen;
+  subidoEn: Date;
 }
 
 /** Un cambio del historial de cambios de un movimiento (RF-20, RF-22). */
@@ -45,7 +56,8 @@ export interface CambioMovimientoDetalle {
 }
 
 /** Consulta de un movimiento (RF-22). */
-export interface MovimientoDetalle extends MovimientoResumen {
+export interface MovimientoDetalle extends Omit<MovimientoResumen, 'pdf'> {
+  pdf: PdfDetalle | null;
   causaId: number;
   /** Permite a la interfaz ocultar las acciones en una causa desactivada (RF-28). */
   causaActiva: boolean;
@@ -69,6 +81,11 @@ export interface MovimientoCliente {
   texto: string;
   /** Fecha posterior al día actual en Buenos Aires (spec 004, RF-21). */
   esFechaFutura: boolean;
+  /**
+   * Si tiene un PDF que el cliente puede ver (spec 010, RF-33, RF-35). Nada más del PDF: ni su
+   * tamaño, ni su código, ni quién lo subió. Un PDF oculto no deja ningún indicio.
+   */
+  tienePdf: boolean;
 }
 
 export function toAutorResumen(usuario: Usuario): AutorResumen {
@@ -96,12 +113,13 @@ export function toMovimientoResumen(
     esFechaFutura: isFutureDate(movimiento.fecha, ahora),
     creadoPor: toAutorResumen(movimiento.creadoPor),
     creadoEn: movimiento.creadoEn,
+    pdf: movimiento.pdfId === null ? null : { visible: movimiento.pdfVisible },
   };
 }
 
 /**
- * Espera el movimiento con creadoPor, modificadoPor y cambios.usuario cargados. Los cambios
- * van del más reciente al más antiguo (RF-22).
+ * Espera el movimiento con creadoPor, modificadoPor, cambios.usuario y pdf.subidoPor cargados.
+ * Los cambios van del más reciente al más antiguo (RF-22).
  */
 export function toMovimientoDetalle(
   movimiento: Movimiento,
@@ -118,6 +136,15 @@ export function toMovimientoDetalle(
     origenTextoVisible: origen,
     modificadoPor: movimiento.modificadoPor ? toAutorResumen(movimiento.modificadoPor) : null,
     modificadoEn: movimiento.modificadoEn,
+    pdf: movimiento.pdf
+      ? {
+          codigo: movimiento.pdf.codigo,
+          tamano: movimiento.pdf.tamano,
+          visible: movimiento.pdfVisible,
+          subidoPor: toAutorResumen(movimiento.pdf.subidoPor),
+          subidoEn: movimiento.pdf.subidoEn,
+        }
+      : null,
     cambios: [...movimiento.cambios]
       .sort((a, b) => b.id - a.id)
       .map((cambio) => ({
@@ -140,5 +167,6 @@ export function toMovimientoCliente(
     tipo: movimiento.tipo,
     texto: visibleText(movimiento).texto,
     esFechaFutura: isFutureDate(movimiento.fecha, ahora),
+    tienePdf: movimiento.pdfId !== null && movimiento.pdfVisible,
   };
 }

@@ -1,3 +1,4 @@
+import { pdfForm } from './archivo-pdf';
 import type { Fuero } from './causas';
 import { httpClient, type HttpClient } from './cliente-http';
 import type { AutorResumen } from './movimientos';
@@ -33,6 +34,16 @@ export interface FalloResumen {
   /** En orden alfabético. */
   palabrasClave: PalabraClave[];
   activo: boolean;
+  /** Para la leyenda "PDF" (spec 010, RF-32). */
+  tienePdf: boolean;
+}
+
+/** El PDF en la ficha de un fallo (spec 010, RF-32). `subidoEn` es ISO. */
+export interface PdfFalloDetalle {
+  codigo: string;
+  tamano: number;
+  subidoPor: AutorResumen;
+  subidoEn: string;
 }
 
 /** Ficha de un fallo (RF-19). Las fechas de registro son ISO. */
@@ -42,6 +53,7 @@ export interface FalloDetalle extends FalloResumen {
   creadoEn: string;
   modificadoPor: AutorResumen | null;
   modificadoEn: string | null;
+  pdf: PdfFalloDetalle | null;
 }
 
 /** El fallo con el que coincide otro, en la pregunta FALLO_REPETIDO (RF-18). */
@@ -99,6 +111,8 @@ export interface UpdateFalloData {
   palabrasClave?: string[];
   enlace?: string | null;
   confirmarRepetido?: boolean;
+  /** Quita el PDF guardado (spec 010, RF-14). */
+  quitarPdf?: true;
 }
 
 const BASE = '/panel/jurisprudencia';
@@ -134,10 +148,22 @@ export function createJurisprudenciaService(http: HttpClient) {
 
     getRuling: (id: number) => http.get<FalloDetalle>(`${BASE}/${id}`),
 
-    createRuling: (data: CreateFalloData) => http.post<FalloDetalle>(BASE, data),
+    /**
+     * Con un PDF, el pedido es un formulario con `datos` y `pdf` (spec 010, plan 010, D2). La
+     * respuesta a la pregunta de repetido reenvía el mismo archivo (RF-25).
+     */
+    createRuling: (data: CreateFalloData, pdf?: File) =>
+      pdf
+        ? http.sendForm<FalloDetalle>('POST', BASE, pdfForm(data, pdf))
+        : http.post<FalloDetalle>(BASE, data),
 
-    updateRuling: (id: number, changes: UpdateFalloData) =>
-      http.patch<FalloDetalle>(`${BASE}/${id}`, changes),
+    updateRuling: (id: number, changes: UpdateFalloData, pdf?: File) =>
+      pdf
+        ? http.sendForm<FalloDetalle>('PATCH', `${BASE}/${id}`, pdfForm(changes, pdf))
+        : http.patch<FalloDetalle>(`${BASE}/${id}`, changes),
+
+    /** El PDF del fallo, con su nombre (spec 010, RF-28). */
+    getPdf: (id: number) => http.getFile(`${BASE}/${id}/pdf`),
 
     deactivateRuling: (id: number) => http.post<FalloDetalle>(`${BASE}/${id}/desactivar`),
 

@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import { fueroRule } from '../../causas/dto/reglas-causa.js';
 import type { Fuero } from '../../causas/causa.entity.js';
+import { quitarPdfRule } from '../../pdfs/reglas-pdf.js';
 import { optional, Rule } from '../../usuarios/dto/reglas.js';
 import {
   caratulaRule,
@@ -57,4 +58,8 @@ export class UpdateFalloDto {
 
   @Rule(optional(confirmationRule))
   confirmarRepetido?: boolean;
+
+  // Quita el PDF guardado (spec 010, RF-14, RF-24). No se combina con un archivo nuevo.
+  @Rule(optional(quitarPdfRule))
+  quitarPdf?: true;
 }

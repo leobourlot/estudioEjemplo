@@ -98,6 +98,8 @@ describe('ClientVisibilityService', () => {
       tipo: created.tipo,
       texto: 'El juez fijó audiencia.',
       esFechaFutura: false,
+      // Spec 010, RF-35.
+      tienePdf: false,
     });
     expect(JSON.stringify(seen)).not.toContain('Descripción técnica');
   });
@@ -251,7 +253,15 @@ describe('ClientVisibilityService', () => {
     expect(page).not.toHaveProperty('total');
     expect(page!.items.map((item) => item.id)).toEqual([newer.id, older.id]);
     for (const item of page!.items) {
-      expect(Object.keys(item).sort()).toEqual(['esFechaFutura', 'fecha', 'id', 'texto', 'tipo']);
+      // tienePdf: spec 010, RF-35.
+      expect(Object.keys(item).sort()).toEqual([
+        'esFechaFutura',
+        'fecha',
+        'id',
+        'texto',
+        'tienePdf',
+        'tipo',
+      ]);
     }
   });
 

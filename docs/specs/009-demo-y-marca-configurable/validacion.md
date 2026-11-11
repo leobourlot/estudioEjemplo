@@ -42,7 +42,7 @@ Rutas abreviadas:
 | RF-21 | Se niega con el modo apagado, en una base de tests o sin la marca de la demo; solo por consola; la base de tests nunca se marca | A `restablecimiento-demo.spec.ts`, `base-demo.spec.ts`; E `migracion-base-demo.e2e-spec.ts`, `restablecimiento-demo.e2e-spec.ts` (`base_demo` sigue vacía); comandos probados a mano: se niegan sin conectarse | ✅ |
 | RF-22 | Fechas corridas los días que separan el 24/10/2026 del día del restablecimiento en Argentina, también en cambios de mes y de año; la fecha de los fallos no se corre | A `fechas-demo.spec.ts`; E `restablecimiento-demo.e2e-spec.ts` | ✅ |
 | RF-23 | Las sesiones se cierran y las cuentas de prueba ingresan sin cambio pendiente | E `restablecimiento-demo.e2e-spec.ts` | ✅ |
-| RF-24 | Una vez por día a las 4:00 de Argentina, con la tarea programada de Easypanel; el README lo explica | README, sección "Modo demo" | ⏳ Al publicar (ver "Pendiente al publicar") |
+| RF-24 | Una vez por día a las 4:00 de Argentina, con una tarea programada del servidor; el README lo explica | README, sección "Tarea programada en el VPS"; verificado en la demo publicada: el cron del VPS (`0 7 * * *` en UTC) corrió solo el 08/11/2026 a las 4:00 de Argentina y restableció los datos | ✅ |
 | RF-25 | Con el modo demo: `noindex` en todas las páginas, conservando la vista previa; `robots.txt` con `Disallow: /`; sin `sitemap.xml`. Apagado, como la spec 007 | W `cabecera-pagina.test.ts`, `archivos-sitio.test.ts`; builds con y sin `VITE_MODO_DEMO` revisados | ✅ |
 
 ## Requisitos no funcionales
@@ -61,13 +61,13 @@ Rutas abreviadas:
 
 ## Criterios de finalización
 
-- [x] Todos los RF con al menos un test en verde, salvo RF-24 (tarea programada, al publicar) y lo que solo se puede ver.
+- [x] Todos los RF con al menos un test en verde, salvo RF-24 (tarea programada, verificada en la demo publicada el 08/11/2026) y lo que solo se puede ver.
 - [x] `pnpm test` y `pnpm lint` sin errores.
 - [x] Búsqueda en todo el proyecto, salvo las specs 001 a 008, de "Pertusatti", "Sabalette", "persaestudio", los dos WhatsApp, el email, la dirección y los colores del estudio original:
   - No queda nada en el código, las imágenes, los datos de muestra ni los tests.
   - Las únicas menciones están en la documentación de esta spec, que nombra al estudio original como contexto.
   - "Concordia" sigue en `api/src/causas/validadores/texto-causa.spec.ts` como ciudad de un juzgado de ejemplo, no como dato del estudio. Se acepta.
-- [x] README actualizado: nombre del proyecto, spec 009 en la hoja de ruta, "Cambiar de marca", "Modo demo" y la tarea programada de Easypanel. El nombre del proyecto también está actualizado en AGENTS.md y en la constitución.
+- [x] README actualizado: nombre del proyecto, spec 009 en la hoja de ruta, "Cambiar de marca", "Modo demo" y la tarea programada del VPS. El nombre del proyecto también está actualizado en AGENTS.md y en la constitución.
 - [ ] Demo manual (ver la guía siguiente).
 
 ## Cambios a los documentos durante la implementación
@@ -103,17 +103,17 @@ Rutas abreviadas:
 ## Veredicto
 
 **La spec 009 está cumplida en todo lo que se puede verificar antes de publicar.**
-- Los 25 RF tienen sus tests en verde, salvo RF-24, la tarea programada de Easypanel, que se verifica al publicar.
+- Los 25 RF tienen sus tests en verde, salvo RF-24, la tarea programada, que se verificó en la demo publicada (08/11/2026).
 - `pnpm test` y `pnpm lint` pasan sin errores.
 - No queda en el código ningún dato del estudio original.
 
-Quedan pendientes la demo manual y la verificación de la tarea programada.
+Queda pendiente la demo manual.
 
-## Pendiente al publicar
+## Publicación (hecha)
 
-1. Crear en Easypanel la base de la demo, aplicar las migraciones y cargar en el servicio de la api `MODO_DEMO=true`. Construir la web con `VITE_MODO_DEMO=true`.
-2. Correr una vez `node dist/demo/marcar-base-demo.js` y después `node dist/demo/restablecer-demo.js` desde la consola del servicio, y verificar el mensaje "Datos de muestra restablecidos…".
-3. Crear la tarea programada con `0 4 * * *` y el comando `node dist/demo/restablecer-demo.js`, y verificar al día siguiente que corrió a las 4:00.
+1. ✅ Base de la demo creada en Easypanel, migraciones aplicadas a mano (`npx typeorm migration:run -d dist/base-de-datos/data-source.js`) y `MODO_DEMO=true` en el servicio de la api, tomado al volver a desplegar. Web construida con `VITE_MODO_DEMO=true`, `VITE_API_URL` y `VITE_URL_SITIO` en `web/.env.production`.
+2. ✅ `node dist/demo/marcar-base-demo.js` y `node dist/demo/restablecer-demo.js` desde la consola del servicio: "Datos de muestra restablecidos. Fechas corridas 12 días." (06/11/2026).
+3. ✅ Easypanel no programa tareas: el restablecimiento diario lo corre el cron del VPS con `docker exec` sobre el contenedor de la api. El VPS está en UTC, así que la expresión es `0 7 * * *`. El 08/11/2026 corrió solo a las 7:00 UTC (4:00 de Argentina) y el log muestra "Datos de muestra restablecidos".
 
 ## Guía de la demo manual
 

@@ -48,6 +48,8 @@ export interface MovimientoCliente {
   tipo: TipoMovimiento;
   texto: string;
   esFechaFutura: boolean;
+  /** Si tiene un PDF que el cliente puede ver; nada más del PDF (spec 010, RF-34, RF-35). */
+  tienePdf: boolean;
 }
 
 export interface MovimientoClienteDetalle extends MovimientoCliente {
@@ -86,6 +88,10 @@ export function createPortalService(http: HttpClient) {
       http.get<MovimientoClienteDetalle>(
         `${BASE}/${segment(causaId)}/movimientos/${segment(movimientoId)}`,
       ),
+
+    /** El PDF de un movimiento que el cliente puede ver (spec 010, RF-33). */
+    getPdf: (causaId: string | number, movimientoId: string | number) =>
+      http.getFile(`${BASE}/${segment(causaId)}/movimientos/${segment(movimientoId)}/pdf`),
   };
 }
 

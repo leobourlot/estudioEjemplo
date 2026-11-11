@@ -239,7 +239,7 @@ Los integrantes del estudio usan fallos de los tribunales para fundar sus escrit
 - Uso de los fallos en los modelos de escritos: citarlos o insertarlos en un escrito se definirá en la spec 006 o en una posterior, respetando RF-36.
 - Acceso de los clientes o de los visitantes a la jurisprudencia, en el portal o en el sitio público (specs 004 y 007).
 - Texto completo del fallo dentro del sistema: se consulta en la fuente, con el enlace.
-- Adjuntos (el fallo en PDF u otros archivos).
+- Adjuntos (el fallo en PDF u otros archivos). Ampliado por la spec 010: un PDF por fallo.
 - Importación de fallos desde bases jurídicas (SAIJ, Corte Suprema, editoriales) o desde archivos.
 - Administración del catálogo de palabras clave: cambiar una palabra por otra distinta, unir, borrar o desactivar palabras clave, sinónimos y jerarquías. Solo cambia su forma, según RF-12.
 - Catálogo administrable de tribunales.

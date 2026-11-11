@@ -245,9 +245,52 @@ export function clientViewSummary(
     : `El cliente no ve este movimiento. Si se lo hace visible, verá ${origen}:`;
 }
 
+// --- Avisos del PDF (spec 010, RF-18 y RF-19) ---
+
+/** Avisos informativos de la visibilidad del PDF: no bloquean ni piden confirmación (RF-18). */
+export const PDF_NOTICES = {
+  alsoPdf: 'El cliente también podrá ver y descargar el PDF',
+  pdfVisible: 'El cliente podrá ver y descargar este PDF',
+  whenMovementVisible: 'El cliente podrá ver y descargar este PDF cuando el movimiento sea visible',
+} as const;
+
+export interface PdfVisibilityChange {
+  movimientoAntes: boolean;
+  movimientoDespues: boolean;
+  /** Si el PDF guardado era visible; false si no había. */
+  pdfVisibleAntes: boolean;
+  /** Si el formulario termina con un PDF visible. */
+  pdfVisibleDespues: boolean;
+  /** Si se eligió un archivo nuevo. */
+  pdfNuevo: boolean;
+}
+
+/**
+ * El único aviso de RF-18 que corresponde, o null. Si el movimiento pasa a visible con un PDF
+ * visible, se suma al aviso de la spec 003 (RF-9). Si no, avisa cuando un PDF pasa a visible
+ * (también uno nuevo marcado visible), según el movimiento quede visible o no.
+ */
+export function pdfVisibilityNotice(cambio: PdfVisibilityChange): string | null {
+  if (!cambio.pdfVisibleDespues) return null;
+  if (!cambio.movimientoAntes && cambio.movimientoDespues) return PDF_NOTICES.alsoPdf;
+  if (cambio.pdfVisibleAntes && !cambio.pdfNuevo) return null;
+  return cambio.movimientoDespues ? PDF_NOTICES.pdfVisible : PDF_NOTICES.whenMovementVisible;
+}
+
+export const RESTORE_WITH_PDF_WARNING =
+  'Al restaurarlo, el cliente volverá a ver este movimiento y su PDF';
+
+/** Restaurar un movimiento visible con un PDF visible pide confirmación (RF-19). */
+export function needsRestoreConfirmation(
+  movimiento: Pick<MovimientoDetalle, 'visible' | 'pdf'>,
+): boolean {
+  return movimiento.visible && movimiento.pdf?.visible === true;
+}
+
 /**
  * RF-13: el movimiento ya era visible, sigue siéndolo, y cambia algo de lo que ve el cliente
- * (fecha, tipo, descripción o texto para el cliente).
+ * (fecha, tipo, descripción o texto para el cliente). Los cambios del PDF no cuentan: tienen sus
+ * propios avisos (spec 010, RF-18).
  */
 export function needsVisibleChangeWarning(
   movimiento: MovimientoDetalle,

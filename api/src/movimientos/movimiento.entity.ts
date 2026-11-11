@@ -9,6 +9,7 @@ import {
   type Relation,
 } from 'typeorm';
 import { Causa } from '../causas/causa.entity.js';
+import { Pdf } from '../pdfs/pdf.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { CambioMovimiento } from './cambio-movimiento.entity.js';
 import { MAX_MOVEMENT_TEXT_LENGTH } from './validadores/longitudes.js';
@@ -29,10 +30,12 @@ export type TipoMovimiento = (typeof MOVEMENT_TYPES)[number];
 /**
  * Movimiento de una sola causa, que no cambia de causa (RF-1, RF-12). Nunca se borra: se
  * anula (RF-16). Cada cambio queda además en movimiento_cambios (RF-20). El índice sirve al
- * filtro por causa y al orden del historial: fecha, momento de carga e id (RF-23).
+ * filtro por causa y al orden del historial: fecha, momento de carga e id (RF-23). Puede tener
+ * un PDF, que no comparte con nadie (spec 010, RF-1).
  */
 @Entity('movimientos')
 @Index('IDX_movimientos_historial', ['causaId', 'fecha', 'creadoEn', 'id'])
+@Index('UQ_movimientos_pdf', ['pdfId'], { unique: true })
 export class Movimiento {
   // También es el orden de registro en el sistema, el último desempate de RF-23.
   @PrimaryGeneratedColumn()
@@ -86,6 +89,19 @@ export class Movimiento {
   // Cualquier cambio de datos o de visibilidad, anulación o restauración (RF-2).
   @Column({ type: 'datetime', precision: 6, nullable: true })
   modificadoEn: Date | null;
+
+  // NULL si no tiene PDF (spec 010, RF-1). La relación nunca trae el contenido (plan 010, D1).
+  @Column({ type: 'int', nullable: true })
+  pdfId: number | null;
+
+  @ManyToOne(() => Pdf, { nullable: true })
+  @JoinColumn({ name: 'pdfId', foreignKeyConstraintName: 'FK_movimientos_pdf' })
+  pdf: Relation<Pdf> | null;
+
+  // Si el cliente puede ver el PDF, además del movimiento (spec 010, RF-17, RF-33). Siempre
+  // false si no hay PDF.
+  @Column({ type: 'boolean', default: false })
+  pdfVisible: boolean;
 
   @OneToMany(() => CambioMovimiento, (cambio) => cambio.movimiento)
   cambios: Relation<CambioMovimiento>[];

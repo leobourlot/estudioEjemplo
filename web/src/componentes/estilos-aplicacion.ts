@@ -54,6 +54,10 @@ export const STATUS_BADGE =
 export const ERROR_ALERT =
   'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800';
 
+/** Aviso informativo, por ejemplo al llegar desde un PDF que no existe (spec 010, RF-37). */
+export const STATUS_ALERT =
+  'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900';
+
 /** Tabla dentro de su tarjeta: se desplaza a lo ancho por dentro (RNF de plataformas). */
 export const TABLE_CARD = `${CARD} overflow-x-auto`;
 export const TABLE = 'w-full min-w-[48rem] text-left text-sm';

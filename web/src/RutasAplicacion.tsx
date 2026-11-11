@@ -19,12 +19,14 @@ import { PanelModeloDetalle } from './paginas/PanelModeloDetalle';
 import { PanelModeloNuevo } from './paginas/PanelModeloNuevo';
 import { PanelModelos } from './paginas/PanelModelos';
 import { PanelMovimientoDetalle } from './paginas/PanelMovimientoDetalle';
+import { PanelFalloPdf, PanelMovimientoPdf } from './paginas/PanelPdf';
 import { PanelUsuarioDetalle } from './paginas/PanelUsuarioDetalle';
 import { PanelUsuarioNuevo } from './paginas/PanelUsuarioNuevo';
 import { PanelUsuarios } from './paginas/PanelUsuarios';
 import { PortalCausaDetalle } from './paginas/PortalCausaDetalle';
 import { PortalInicio } from './paginas/PortalInicio';
 import { PortalMovimientoDetalle } from './paginas/PortalMovimientoDetalle';
+import { PortalMovimientoPdf } from './paginas/PortalMovimientoPdf';
 
 /**
  * Rutas de la aplicación (planes 001 a 006, "Rutas"). Están separadas del router para poder
@@ -45,6 +47,17 @@ export function RutasAplicacion() {
             las reglas de RutaProtegida (spec 007, RF-10). */}
           <Route path="/panel/*" element={<Navigate to="/panel" replace />} />
           <Route path="/portal/*" element={<Navigate to="/portal" replace />} />
+          {/* "Ver PDF" (spec 010, plan 010, D4): en su pestaña, sin el diseño del panel ni del
+            portal, porque se reemplaza enseguida por el PDF. */}
+          <Route
+            path="/panel/causas/:id/movimientos/:movimientoId/pdf"
+            element={<PanelMovimientoPdf />}
+          />
+          <Route path="/panel/jurisprudencia/:id/pdf" element={<PanelFalloPdf />} />
+          <Route
+            path="/portal/causas/:id/movimientos/:movimientoId/pdf"
+            element={<PortalMovimientoPdf />}
+          />
           <Route element={<DisenoPanel />}>
             <Route path="/panel" element={<PanelInicio />} />
             <Route path="/panel/causas" element={<PanelCausas />} />

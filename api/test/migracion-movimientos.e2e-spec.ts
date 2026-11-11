@@ -95,6 +95,8 @@ describe('migración de movimientos', () => {
       'movimientos.causaId -> causas.id',
       'movimientos.creadoPorId -> usuarios.id',
       'movimientos.modificadoPorId -> usuarios.id',
+      // El PDF de cada movimiento, de la spec 010.
+      'movimientos.pdfId -> pdfs.id',
     ]);
   });
 

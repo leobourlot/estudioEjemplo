@@ -41,8 +41,8 @@ describe('migración de la base de la demo', () => {
     await dataSource?.destroy();
   });
 
-  it('es la última migración', () => {
-    expect(MIGRATIONS.at(-1)).toBe(CrearBaseDemo1793664000000);
+  it('está registrada entre las migraciones', () => {
+    expect(MIGRATIONS).toContain(CrearBaseDemo1793664000000);
   });
 
   it('up crea la tabla base_demo, vacía', async () => {
@@ -70,7 +70,9 @@ describe('migración de la base de la demo', () => {
   });
 
   it('down borra la tabla, y up la vuelve a crear', async () => {
-    await dataSource.undoLastMigration();
+    // Deshace también las migraciones posteriores (spec 010 en adelante), como el test del fuero.
+    const fromDemo = MIGRATIONS.length - MIGRATIONS.indexOf(CrearBaseDemo1793664000000);
+    for (let index = 0; index < fromDemo; index++) await dataSource.undoLastMigration();
     expect(await queryRunner.hasTable('base_demo')).toBe(false);
 
     await dataSource.runMigrations();

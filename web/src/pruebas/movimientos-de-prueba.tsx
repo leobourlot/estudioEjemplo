@@ -21,6 +21,7 @@ export function testMovimientoResumen(
     esFechaFutura: false,
     creadoPor: { id: 1, nombre: 'Luis', apellido: 'Sosa', activo: true },
     creadoEn: '2026-10-01T15:00:00.000Z',
+    pdf: null,
     ...overrides,
   };
 }
@@ -29,9 +30,11 @@ export function testMovimientoResumen(
 export function testMovimientoDetalle(
   overrides: Partial<MovimientoDetalle> = {},
 ): MovimientoDetalle {
-  const resumen = testMovimientoResumen(overrides);
+  const { pdf = null, ...resto } = overrides;
+  const resumen = testMovimientoResumen(resto);
   return {
     ...resumen,
+    pdf,
     causaId: 7,
     causaActiva: true,
     textoCliente: null,
@@ -75,6 +78,7 @@ export function fakeMovimientosService(
     updateMovement: vi.fn(),
     annulMovement: vi.fn(),
     restoreMovement: vi.fn(),
+    getPdf: vi.fn(),
     ...overrides,
   } as FakeMovimientosService;
 }

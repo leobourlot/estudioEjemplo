@@ -238,6 +238,7 @@ describe('toMovimientoClienteDetalle (RF-22)', () => {
       tipo: 'audiencia',
       texto: 'Audiencia fijada.',
       esFechaFutura: false,
+      tienePdf: true,
     };
 
     expect(toMovimientoClienteDetalle(movimiento, causa())).toEqual({

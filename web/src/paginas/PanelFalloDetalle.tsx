@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AccionesPdf } from '../componentes/AccionesPdf';
 import { EnlaceFuente } from '../componentes/EnlaceFuente';
 import { FormularioFallo } from '../componentes/FormularioFallo';
 import { ListaDeErrores } from '../componentes/ListaDeErrores';
@@ -7,17 +8,23 @@ import { PreguntaFalloRepetido } from '../componentes/PreguntaFalloRepetido';
 import { useJurisprudenciaService } from '../componentes/ProveedorServicios';
 import { TextoLiteral } from '../componentes/TextoLiteral';
 import { useMantenerSesion } from '../componentes/useMantenerSesion';
+import { formatPdfSize } from '../servicios/archivo-pdf';
 import { ApiError, errorMessage } from '../servicios/cliente-http';
 import {
   buildUpdateRulingData,
   type RulingForm,
   rulingFormFrom,
 } from '../servicios/formulario-fallo';
+import { afterSaveError, initialPdfState, pdfChanges } from '../servicios/formulario-pdf';
 import type { FalloDetalle } from '../servicios/jurisprudencia';
 import { pendingQuestion, type PendingQuestion, type QuestionOption } from '../servicios/preguntas';
-import { EMPTY_VALUE } from '../servicios/presentacion';
+import { EMPTY_VALUE, formatDateTime } from '../servicios/presentacion';
 import { fueroLabel } from '../servicios/presentacion-causas';
-import { formatMovementDate, movementAuditLines } from '../servicios/presentacion-movimientos';
+import {
+  authorName,
+  formatMovementDate,
+  movementAuditLines,
+} from '../servicios/presentacion-movimientos';
 import {
   CARD,
   ERROR_ALERT,
@@ -72,6 +79,7 @@ export function PanelFalloDetalle() {
   } | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [pdf, setPdf] = useState(() => initialPdfState(null));
 
   useEffect(() => {
     let active = true;
@@ -107,20 +115,46 @@ export function PanelFalloDetalle() {
 
   function startEditing(current: FalloDetalle) {
     setForm(rulingFormFrom(current));
+    setPdf(initialPdfState(current.pdf ? { visible: false } : null));
     setProblems([]);
     setQuestion(null);
     setEditing(true);
   }
 
-  const save = (current: FalloDetalle, values: RulingForm, confirmarRepetido = false) =>
-    run(
-      () =>
-        jurisprudencia.updateRuling(falloId, {
-          ...buildUpdateRulingData(values, current),
-          ...(confirmarRepetido ? { confirmarRepetido: true } : {}),
-        }),
-      'modificar',
-    );
+  /**
+   * Los cambios con los del PDF, en un solo pedido (spec 010, RF-24). Si la api pregunta por un
+   * repetido, la respuesta reenvía el mismo archivo (RF-25). Un rechazo del archivo lo descarta
+   * (RF-11).
+   */
+  async function save(current: FalloDetalle, values: RulingForm, confirmarRepetido = false) {
+    setEnviando(true);
+    setProblems([]);
+    setQuestion(null);
+    try {
+      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: false });
+      const changes = {
+        ...buildUpdateRulingData(values, current),
+        ...datos,
+        ...(confirmarRepetido ? { confirmarRepetido: true } : {}),
+      };
+      setFallo(
+        await (archivo
+          ? jurisprudencia.updateRuling(falloId, changes, archivo)
+          : jurisprudencia.updateRuling(falloId, changes)),
+      );
+      setEditing(false);
+    } catch (caught) {
+      const pending = pendingQuestion(caught);
+      if (pending) setQuestion({ pending, action: 'modificar' });
+      else {
+        const result = afterSaveError(caught, pdf);
+        setProblems(result.problems.length > 0 ? result.problems : messagesOf(caught));
+        setPdf(result.estado);
+      }
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   const deactivate = () => {
     setConfirmingDeactivation(false);
@@ -274,6 +308,9 @@ export function PanelFalloDetalle() {
             apiProblems={problems}
             enviando={enviando}
             onTyping={notifyTyping}
+            pdf={pdf}
+            onPdfChange={setPdf}
+            pdfGuardado={fallo.pdf}
           />
         ) : (
           <dl className="space-y-4">
@@ -301,6 +338,25 @@ export function PanelFalloDetalle() {
             </Dato>
             <Dato label="Fuente">
               {fallo.enlace === null ? EMPTY_VALUE : <EnlaceFuente enlace={fallo.enlace} />}
+            </Dato>
+            {/* Spec 010, RF-32: se ve y se descarga también con el fallo desactivado (RF-26). */}
+            <Dato label="PDF">
+              {fallo.pdf ? (
+                <div className="space-y-2">
+                  <p>
+                    {formatPdfSize(fallo.pdf.tamano)}, subido por {authorName(fallo.pdf.subidoPor)}{' '}
+                    el {formatDateTime(fallo.pdf.subidoEn)}.
+                  </p>
+                  <AccionesPdf
+                    verHref={`/panel/jurisprudencia/${falloId}/pdf`}
+                    etiqueta={`del fallo del ${formatMovementDate(fallo.fecha)}`}
+                    descargar={() => jurisprudencia.getPdf(falloId)}
+                    inicio="/panel"
+                  />
+                </div>
+              ) : (
+                'Sin PDF'
+              )}
             </Dato>
           </dl>
         )}

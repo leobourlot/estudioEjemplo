@@ -6,12 +6,22 @@ import {
   type MovementForm,
   needsVisibleChangeWarning,
   normalizeMovementText,
+  PDF_NOTICES,
+  pdfVisibilityNotice,
   textLength,
   validateMovementForm,
   VISIBLE_CHANGE_WARNING,
   VISIBLE_TEXT_ORIGIN_LABELS,
   visibleTextPreview,
 } from '../servicios/formulario-movimiento';
+import {
+  hasPdf,
+  pdfConfirmation,
+  type PdfFormState,
+  pendingRejectionMessage,
+} from '../servicios/formulario-pdf';
+import { CampoPdf, type PdfGuardadoInfo } from './CampoPdf';
+import { ConfirmacionGuardar } from './ConfirmacionGuardar';
 import type { MovimientoDetalle, TipoMovimiento } from '../servicios/movimientos';
 import { EMPTY_VALUE } from '../servicios/presentacion';
 import { MOVEMENT_TYPE_OPTIONS } from '../servicios/presentacion-movimientos';
@@ -31,6 +41,11 @@ interface FormularioMovimientoProps {
   /** Mensajes que devolvió la API. */
   apiProblems?: string[];
   enviando?: boolean;
+  /** El PDF del formulario (spec 010). Sin él, el formulario no ofrece PDF. */
+  pdf?: PdfFormState;
+  onPdfChange?: (pdf: PdfFormState) => void;
+  /** Los datos del PDF guardado, para mostrarlos. */
+  pdfGuardado?: PdfGuardadoInfo | null;
 }
 
 const fieldClass = INPUT;
@@ -54,8 +69,13 @@ export function FormularioMovimiento({
   original,
   apiProblems = [],
   enviando = false,
+  pdf,
+  onPdfChange,
+  pdfGuardado = null,
 }: FormularioMovimientoProps) {
   const [problems, setProblems] = useState<string[]>([]);
+  // La confirmación pendiente de reemplazar o quitar el PDF (spec 010, RF-13).
+  const [confirmando, setConfirmando] = useState<string | null>(null);
 
   const set =
     <K extends keyof MovementForm>(field: K) =>
@@ -64,13 +84,35 @@ export function FormularioMovimiento({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = validateMovementForm(value);
+    // Con un archivo rechazado pendiente, no se envía nada (spec 010, RF-11).
+    const rechazo = pdf ? pendingRejectionMessage(pdf) : null;
+    const found = [...validateMovementForm(value), ...(rechazo ? [rechazo] : [])];
     setProblems(found);
     if (found.length > 0) return;
+    const confirmation = pdf ? pdfConfirmation(pdf) : null;
+    if (confirmation) {
+      setConfirmando(confirmation);
+      return;
+    }
+    await onSubmit();
+  }
+
+  async function confirm() {
+    setConfirmando(null);
     await onSubmit();
   }
 
   const preview = visibleTextPreview(value);
+  // El aviso del PDF de RF-18: uno solo, informativo.
+  const pdfNotice = pdf
+    ? pdfVisibilityNotice({
+        movimientoAntes: original?.visible ?? false,
+        movimientoDespues: value.visible,
+        pdfVisibleAntes: original?.pdf?.visible ?? false,
+        pdfVisibleDespues: hasPdf(pdf) && pdf.visible,
+        pdfNuevo: pdf.archivo !== null,
+      })
+    : null;
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -165,6 +207,7 @@ export function FormularioMovimiento({
             El cliente verá {VISIBLE_TEXT_ORIGIN_LABELS[preview.origen]}:
           </p>
           <TextoLiteral texto={preview.texto === '' ? EMPTY_VALUE : preview.texto} />
+          {pdfNotice === PDF_NOTICES.alsoPdf && <p>{pdfNotice}</p>}
         </div>
       )}
 
@@ -174,8 +217,32 @@ export function FormularioMovimiento({
         </p>
       )}
 
+      {pdf && onPdfChange && (
+        <CampoPdf estado={pdf} onChange={onPdfChange} conVisibilidad guardado={pdfGuardado} />
+      )}
+
+      {pdfNotice && pdfNotice !== PDF_NOTICES.alsoPdf && (
+        <p role="status" className="rounded bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          {pdfNotice}
+        </p>
+      )}
+
+      {confirmando && (
+        <ConfirmacionGuardar
+          mensaje={confirmando}
+          onConfirm={() => void confirm()}
+          onCancel={() => setConfirmando(null)}
+        />
+      )}
+
+      {enviando && (
+        <p role="status" className="text-sm text-slate-600">
+          Guardando…
+        </p>
+      )}
+
       <div className="flex gap-2">
-        <button type="submit" disabled={enviando} className={PRIMARY_BUTTON_SMALL}>
+        <button type="submit" disabled={enviando || confirmando !== null} className={PRIMARY_BUTTON_SMALL}>
           {submitLabel}
         </button>
         {onCancel && (

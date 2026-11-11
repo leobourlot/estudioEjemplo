@@ -1,20 +1,26 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AccionesPdf } from '../componentes/AccionesPdf';
 import { FormularioMovimiento } from '../componentes/FormularioMovimiento';
 import { HistorialCambios } from '../componentes/HistorialCambios';
 import { ListaDeErrores } from '../componentes/ListaDeErrores';
 import { useMovimientosService } from '../componentes/ProveedorServicios';
 import { TextoLiteral } from '../componentes/TextoLiteral';
+import { formatPdfSize } from '../servicios/archivo-pdf';
 import { ApiError, errorMessage } from '../servicios/cliente-http';
 import {
   buildUpdateMovementData,
   clientViewSummary,
   type MovementForm,
   movementFormFrom,
+  needsRestoreConfirmation,
+  RESTORE_WITH_PDF_WARNING,
 } from '../servicios/formulario-movimiento';
+import { afterSaveError, initialPdfState, pdfChanges } from '../servicios/formulario-pdf';
 import type { MovimientoDetalle } from '../servicios/movimientos';
-import { EMPTY_VALUE } from '../servicios/presentacion';
+import { EMPTY_VALUE, formatDateTime } from '../servicios/presentacion';
 import {
+  authorName,
   formatMovementDate,
   movementAuditLines,
   tipoMovimientoLabel,
@@ -62,8 +68,11 @@ export function PanelMovimientoDetalle() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<MovementForm | null>(null);
   const [confirmingAnnul, setConfirmingAnnul] = useState(false);
+  const [confirmingRestore, setConfirmingRestore] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [pdf, setPdf] = useState(() => initialPdfState(null));
+  const restoreTitleId = useId();
 
   useEffect(() => {
     let active = true;
@@ -95,21 +104,46 @@ export function PanelMovimientoDetalle() {
 
   function startEditing(current: MovimientoDetalle) {
     setForm(movementFormFrom(current));
+    setPdf(initialPdfState(current.pdf ? { visible: current.pdf.visible } : null));
     setProblems([]);
     setEditing(true);
   }
 
-  const save = (current: MovimientoDetalle, values: MovementForm) =>
-    run(() =>
-      movimientos.updateMovement(causaId, movimientoId, buildUpdateMovementData(values, current)),
-    );
+  /** Los cambios con los del PDF, en un solo pedido (spec 010, RF-10, RF-11, RF-12). */
+  async function save(current: MovimientoDetalle, values: MovementForm) {
+    setEnviando(true);
+    setProblems([]);
+    try {
+      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: true });
+      const changes = { ...buildUpdateMovementData(values, current), ...datos };
+      setMovimiento(
+        await (archivo
+          ? movimientos.updateMovement(causaId, movimientoId, changes, archivo)
+          : movimientos.updateMovement(causaId, movimientoId, changes)),
+      );
+      setEditing(false);
+    } catch (caught) {
+      const result = afterSaveError(caught, pdf);
+      setProblems(result.problems);
+      setPdf(result.estado);
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   const annul = () => {
     setConfirmingAnnul(false);
     return run(() => movimientos.annulMovement(causaId, movimientoId));
   };
 
-  const restore = () => run(() => movimientos.restoreMovement(causaId, movimientoId));
+  const restore = () => {
+    setConfirmingRestore(false);
+    return run(() => movimientos.restoreMovement(causaId, movimientoId));
+  };
+
+  /** Con un PDF visible, restaurar pide confirmación (spec 010, RF-19). */
+  const askRestore = (current: MovimientoDetalle) =>
+    needsRestoreConfirmation(current) ? setConfirmingRestore(true) : void restore();
 
   const backLink = (
     <Link to={`/panel/causas/${causaId}`} className={`text-sm ${TEXT_LINK}`}>
@@ -172,14 +206,16 @@ export function PanelMovimientoDetalle() {
           {canChange && !editing && (
             <div className="flex gap-2">
               {movimiento.anulado ? (
-                <button
-                  type="button"
-                  disabled={enviando}
-                  onClick={() => void restore()}
-                  className={secondaryButton}
-                >
-                  Restaurar
-                </button>
+                !confirmingRestore && (
+                  <button
+                    type="button"
+                    disabled={enviando}
+                    onClick={() => askRestore(movimiento)}
+                    className={secondaryButton}
+                  >
+                    Restaurar
+                  </button>
+                )
               ) : (
                 <>
                   <button
@@ -237,6 +273,30 @@ export function PanelMovimientoDetalle() {
           </div>
         )}
 
+        {confirmingRestore && (
+          <div
+            role="alertdialog"
+            aria-labelledby={restoreTitleId}
+            className="space-y-2 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            <p id={restoreTitleId} className="font-medium">
+              {RESTORE_WITH_PDF_WARNING}
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => void restore()} className={secondaryButton}>
+                Sí, restaurar
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingRestore(false)}
+                className={secondaryButton}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         {editing && form ? (
           <FormularioMovimiento
             value={form}
@@ -247,6 +307,9 @@ export function PanelMovimientoDetalle() {
             original={movimiento}
             apiProblems={problems}
             enviando={enviando}
+            pdf={pdf}
+            onPdfChange={setPdf}
+            pdfGuardado={movimiento.pdf}
           />
         ) : (
           <dl className="space-y-4">
@@ -260,6 +323,26 @@ export function PanelMovimientoDetalle() {
             </Dato>
             <Dato label="Texto para el cliente">
               <TextoLiteral texto={movimiento.textoCliente ?? EMPTY_VALUE} />
+            </Dato>
+            <Dato label="PDF">
+              {movimiento.pdf ? (
+                <div className="space-y-2">
+                  <p>
+                    {formatPdfSize(movimiento.pdf.tamano)}, subido por{' '}
+                    {authorName(movimiento.pdf.subidoPor)} el{' '}
+                    {formatDateTime(movimiento.pdf.subidoEn)}.{' '}
+                    {movimiento.pdf.visible ? 'Visible para el cliente.' : 'Oculto para el cliente.'}
+                  </p>
+                  <AccionesPdf
+                    verHref={`/panel/causas/${causaId}/movimientos/${movimientoId}/pdf`}
+                    etiqueta={`del movimiento del ${formatMovementDate(movimiento.fecha)}`}
+                    descargar={() => movimientos.getPdf(causaId, movimientoId)}
+                    inicio="/panel"
+                  />
+                </div>
+              ) : (
+                'Sin PDF'
+              )}
             </Dato>
           </dl>
         )}

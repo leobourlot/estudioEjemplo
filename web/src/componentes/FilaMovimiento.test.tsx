@@ -16,6 +16,7 @@ const MOVEMENT: MovimientoResumen = {
   esFechaFutura: false,
   creadoPor: { id: 1, nombre: 'Luis', apellido: 'Sosa', activo: true },
   creadoEn: '2026-10-01T15:00:00.000Z',
+  pdf: null,
 };
 
 function renderRow(overrides: Partial<MovimientoResumen> = {}) {

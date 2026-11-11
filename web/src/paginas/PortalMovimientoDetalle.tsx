@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { AccionesPdfPortal } from '../componentes/AccionesPdfPortal';
 import { CARD, ERROR_ALERT, PAGE, TEXT_LINK } from '../componentes/estilos-aplicacion';
 import { usePortalService } from '../componentes/ProveedorServicios';
 import { TextoLiteral } from '../componentes/TextoLiteral';
@@ -96,6 +97,7 @@ export function PortalMovimientoDetalle() {
           )}
         </h1>
         <TextoLiteral texto={movimiento.texto} className="text-slate-800" />
+        <AccionesPdfPortal movimiento={movimiento} />
       </article>
     </main>
   );

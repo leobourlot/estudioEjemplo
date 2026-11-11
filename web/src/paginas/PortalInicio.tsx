@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { AvisoNavegacion } from '../componentes/AvisoNavegacion';
 import { ListaCausasPortal } from '../componentes/ListaCausasPortal';
 import { Paginacion } from '../componentes/Paginacion';
 import { ERROR_ALERT, PAGE, PAGE_TITLE } from '../componentes/estilos-aplicacion';
@@ -86,6 +87,7 @@ export function PortalInicio() {
   return (
     <main className={PAGE}>
       {usuario && <h1 className={PAGE_TITLE}>{greeting(usuario.nombre)}</h1>}
+      <AvisoNavegacion />
       <h2 className={PAGE_TITLE}>Mis causas</h2>
       {content()}
     </main>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { MovimientoCliente } from '../servicios/portal';
 import { formatMovementDate, tipoMovimientoLabel } from '../servicios/presentacion-movimientos';
 import { movementLegend, truncateClientText } from '../servicios/presentacion-portal';
+import { AccionesPdfPortal } from './AccionesPdfPortal';
 import { TEXT_LINK } from './estilos-aplicacion';
 import { TextoLiteral } from './TextoLiteral';
 
@@ -53,6 +54,7 @@ export function TarjetaMovimientoPortal({ movimiento, href }: TarjetaMovimientoP
           Abrir
         </Link>
       </div>
+      <AccionesPdfPortal movimiento={movimiento} />
     </article>
   );
 }

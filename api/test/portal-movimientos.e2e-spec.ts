@@ -108,6 +108,8 @@ describe('GET /api/portal/causas/:causaId/movimientos', () => {
         tipo: 'providencia',
         texto: 'El juez fijó audiencia.',
         esFechaFutura: false,
+        // Spec 010, RF-35.
+        tienePdf: false,
       },
       expect.objectContaining({ fecha: '2024-01-01', texto: 'Descripción técnica interna.' }),
     ]);
@@ -172,6 +174,8 @@ describe('GET /api/portal/causas/:causaId/movimientos', () => {
       tipo: 'providencia',
       texto: 'Texto para el cliente.',
       esFechaFutura: false,
+      // Spec 010, RF-35.
+      tienePdf: false,
       causa: { id: causa.id, caratula: 'Gómez c/ López s/ daños' },
     });
   });

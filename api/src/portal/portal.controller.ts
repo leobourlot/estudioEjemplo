@@ -1,5 +1,17 @@
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Query,
+  Res,
+  type StreamableFile,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { CurrentUser, Roles } from '../autenticacion/decoradores.js';
+import { PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
+import { toPdfResponse } from '../pdfs/respuesta-pdf.js';
 import type { MovimientoClientePage } from '../movimientos/visibilidad-cliente.service.js';
 import { MOVIMIENTOS_MESSAGES } from '../movimientos/movimientos.service.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
@@ -23,6 +35,11 @@ const CausaIdPipe = new ParseIntPipe({
 /** Un movimiento con id que no es un número no existe en la causa (RF-29). */
 const MovimientoIdPipe = new ParseIntPipe({
   exceptionFactory: () => new NotFoundException(MOVIMIENTOS_MESSAGES.notFound),
+});
+
+/** En la descarga del PDF, cualquier id no numérico responde el 404 único (spec 010, RF-37). */
+const PdfIdPipe = new ParseIntPipe({
+  exceptionFactory: () => new NotFoundException(PDF_MESSAGES.notFound),
 });
 
 /**
@@ -58,6 +75,21 @@ export class PortalController {
     @Query() query: PortalPageQueryDto,
   ): Promise<MovimientoClientePage> {
     return this.portal.listMovimientos(usuario.id, causaId, query.pagina ?? 1);
+  }
+
+  /**
+   * El PDF de un movimiento que el cliente puede ver, como descarga (spec 010, RF-33). Cualquier
+   * otro caso, también un id no numérico, responde el mismo 404 "No existe ese PDF" (RF-37).
+   */
+  @Get(':causaId/movimientos/:movimientoId/pdf')
+  async downloadPdf(
+    @CurrentUser() usuario: Usuario,
+    @Param('causaId', PdfIdPipe) causaId: number,
+    @Param('movimientoId', PdfIdPipe) movimientoId: number,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const { contenido, nombre } = await this.portal.getPdf(usuario.id, causaId, movimientoId);
+    return toPdfResponse(response, contenido, nombre);
   }
 
   @Get(':causaId/movimientos/:movimientoId')

@@ -20,5 +20,8 @@ export function RutaProtegida() {
   }
 
   const decision = canAccess(pathname, usuario);
-  return decision.allowed ? <Outlet /> : <Navigate to={decision.redirectTo} replace />;
+  if (decision.allowed) return <Outlet />;
+  // El aviso, si hay, lo muestra el inicio de la sección (spec 010, RF-37).
+  const state = decision.notice ? { aviso: decision.notice } : undefined;
+  return <Navigate to={decision.redirectTo} replace state={state} />;
 }

@@ -184,6 +184,8 @@ describe('listado de jurisprudencia', () => {
           { id: expect.any(Number), texto: 'responsabilidad objetiva' },
         ],
         activo: true,
+        // Spec 010, RF-32.
+        tienePdf: false,
       });
     });
   });

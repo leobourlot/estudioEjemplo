@@ -53,6 +53,7 @@ export function testMovimientoCliente(
     tipo: 'audiencia',
     texto: 'Se fijó audiencia preliminar.',
     esFechaFutura: false,
+    tienePdf: false,
     ...overrides,
   };
 }
@@ -85,6 +86,7 @@ export function fakePortalService(overrides: Partial<PortalService> = {}): FakeP
       testPortalPage([], pagina),
     ),
     getMovimiento: vi.fn(async () => testMovimientoClienteDetalle()),
+    getPdf: vi.fn(),
     ...overrides,
   } as FakePortalService;
 }

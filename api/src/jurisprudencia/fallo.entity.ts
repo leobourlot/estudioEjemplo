@@ -9,6 +9,7 @@ import {
   type Relation,
 } from 'typeorm';
 import { type Fuero, JURISDICTIONS } from '../causas/causa.entity.js';
+import { Pdf } from '../pdfs/pdf.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { FalloPalabraClave } from './fallo-palabra-clave.entity.js';
 import {
@@ -23,11 +24,13 @@ import {
  * Fallo del registro de jurisprudencia (spec 005, RF-1). Nunca se borra: se desactiva
  * (RF-29). Los textos se guardan ya convertidos (RF-3). El índice del listado resuelve el
  * filtro por activos y el orden: fecha, momento de carga e id (RF-21). El de repetido sirve
- * a la búsqueda por tribunal y número (RF-18).
+ * a la búsqueda por tribunal y número (RF-18). Puede tener un PDF, que no comparte con nadie
+ * y que solo ven los integrantes (spec 010, RF-1, RF-27).
  */
 @Entity('fallos')
 @Index('IDX_fallos_listado', ['activo', 'fecha', 'creadoEn', 'id'])
 @Index('IDX_fallos_repetido', ['tribunal', 'numero'])
+@Index('UQ_fallos_pdf', ['pdfId'], { unique: true })
 export class Fallo {
   // También es el orden de registro en el sistema, el último desempate de RF-21.
   @PrimaryGeneratedColumn()
@@ -86,6 +89,14 @@ export class Fallo {
   // Cambio de datos o de palabras clave, desactivación o reactivación (RF-2).
   @Column({ type: 'datetime', precision: 6, nullable: true })
   modificadoEn: Date | null;
+
+  // NULL si no tiene PDF (spec 010, RF-1). La relación nunca trae el contenido (plan 010, D1).
+  @Column({ type: 'int', nullable: true })
+  pdfId: number | null;
+
+  @ManyToOne(() => Pdf, { nullable: true })
+  @JoinColumn({ name: 'pdfId', foreignKeyConstraintName: 'FK_fallos_pdf' })
+  pdf: Relation<Pdf> | null;
 
   @OneToMany(() => FalloPalabraClave, (relacion) => relacion.fallo)
   palabrasClave: Relation<FalloPalabraClave>[];

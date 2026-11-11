@@ -39,7 +39,8 @@ estudioJuridicoSDD/
 │       ├── 006-modelos-de-escritos/
 │       ├── 007-sitio-publico/
 │       ├── 008-identidad-visual-de-la-aplicacion/
-│       └── 009-demo-y-marca-configurable/
+│       ├── 009-demo-y-marca-configurable/
+│       └── 010-pdf-de-movimientos-y-fallos/
 ├── web/                             # React + Vite
 │   ├── public/marca/                # imágenes y tipografía de la marca (spec 009)
 │   └── src/
@@ -76,6 +77,7 @@ La estructura de `web/src` y `api/src` es orientativa. Cada `plan.md` define los
 | 007-sitio-publico | Estudio, integrantes, servicios, contacto, WhatsApp | 001, 004 | Terminada |
 | 008-identidad-visual-de-la-aplicacion | Logo, colores, menú lateral y tarjetas en el ingreso, el portal y el panel | 007 | Terminada |
 | 009-demo-y-marca-configurable | Marca en un único archivo, tests sin datos de la marca y modo demo | 001, 007, 008 | Terminada |
+| 010-pdf-de-movimientos-y-fallos | Un PDF por movimiento y por fallo, guardado en la base; visible para el cliente solo si se marca | 003, 004, 005, 009 | Terminada |
 
 Cada spec pasa por el ciclo completo (spec → clarificación → plan → tareas → implementación → validación) antes de empezar la siguiente.
 
@@ -109,6 +111,8 @@ pnpm format         # Prettier
 - Las variables de entorno se documentan en `web/.env.example` y `api/.env.example`. Los archivos `.env` reales no se versionan.
 - El esquema de la base cambia solo mediante migraciones de TypeORM. `synchronize` siempre está en `false`.
 - Una tarea está terminada solo si `pnpm test` y `pnpm lint` pasan sin errores.
+- Los PDF de movimientos y fallos se guardan en la base (spec 010). Un PDF de 5 MB viaja hacia MySQL como un texto de unos 10,5 MB, así que cada base (desarrollo, tests, demo y producción) tiene que aceptar paquetes de al menos 16 MB. En MySQL 8 el valor por defecto es 64 MB. Para verificarlo: `SHOW VARIABLES LIKE 'max_allowed_packet';`.
+- Los PDF suman hasta 5 MB cada uno a la base y a sus copias de seguridad. Un PDF quitado o reemplazado sale de la base, pero puede seguir en las copias de seguridad anteriores hasta que se descarten.
 
 ## Cambiar de marca
 
@@ -141,12 +145,13 @@ El mismo código sirve para la demo y para el sitio de un estudio real. El modo 
 - La pantalla de ingreso muestra tres cuentas de prueba de los datos de muestra (la administradora, el abogado y la cliente, con la contraseña `Muestra2026`), con un botón que completa el formulario.
 - La api no deja modificar esas tres cuentas: ni su contraseña, ni sus datos, ni desactivarlas.
 - Todas las páginas llevan `noindex`, `robots.txt` responde `Disallow: /` y no se genera `sitemap.xml`.
+- La base admite hasta 4 PDF en total, contando los 2 de los datos de muestra (spec 010, RF-41): uno visible en la sentencia de la causa de la cliente de prueba y otro en un fallo. Un quinto se rechaza; reemplazar uno no suma.
 - Los datos de muestra se pueden restablecer con un comando, que corre todos los días a las 4:00.
 
 ### Encenderlo
 
-- **Web:** construir con `VITE_MODO_DEMO=true` (variables de la construcción en Hostinger, o en `web/.env`).
-- **API:** `MODO_DEMO=true` en las variables del servicio de Easypanel.
+- **Web:** construir con `VITE_MODO_DEMO=true`. Las variables `VITE_*` quedan escritas en el JavaScript al construir, así que van en `web/.env.production` (que Vite lee solo al construir, no en `pnpm dev`), junto con `VITE_API_URL` y `VITE_URL_SITIO`, o en las variables de la construcción de Hostinger si construye desde el repositorio. Después de cambiarlas, hay que volver a construir y subir `web/dist`.
+- **API:** `MODO_DEMO=true` en las variables del servicio de Easypanel, y volver a desplegar: el contenedor que está corriendo no ve las variables nuevas hasta el próximo despliegue. `printenv MODO_DEMO`, en la consola del servicio, muestra lo que ve.
 
 Cualquier otro valor, o la variable ausente, lo deja apagado. Un estudio real nunca lleva ninguna de las dos.
 
@@ -158,9 +163,10 @@ El restablecimiento borra todos los datos, así que solo corre en una base ident
 - un nombre de base que no contenga "test";
 - la marca de la tabla `base_demo`.
 
-Una vez, con las migraciones aplicadas (`pnpm --filter api migration:run` o al desplegar), desde la consola del servicio de la api en Easypanel:
+La api no aplica las migraciones al arrancar ni al desplegar. Una vez, desde la consola del servicio de la api en Easypanel:
 
 ```bash
+npx typeorm migration:run -d dist/base-de-datos/data-source.js   # crea las tablas
 node dist/demo/marcar-base-demo.js        # marca esta base como la de la demo
 node dist/demo/restablecer-demo.js        # vacía las tablas y carga los datos de muestra
 ```
@@ -169,19 +175,44 @@ En desarrollo: `pnpm --filter api demo:marcar` y `pnpm --filter api demo:restabl
 
 El restablecimiento:
 
-- vacía todas las tablas (salvo `migraciones` y `base_demo`);
-- carga `api/datos-de-muestra/datos-de-muestra.sql`;
+- vacía todas las tablas (salvo `migraciones` y `base_demo`), incluidos los PDF que hayan subido los visitantes;
+- carga `api/datos-de-muestra/datos-de-muestra.sql`, con sus dos PDF de muestra;
 - corre todas sus fechas hasta el día del restablecimiento, salvo la de los fallos, que son reales;
 - cierra todas las sesiones.
 
 Todo va en una transacción: si algo falla, la base queda como estaba.
 
-### Tarea programada en Easypanel
+### Tarea programada en el VPS
 
-En el servicio de la api, crear una tarea programada (cron) con:
+Easypanel no programa tareas: su sección **Scripts** guarda comandos para correrlos a mano, con un botón, dentro del contenedor del servicio (sirve para restablecer la demo cuando haga falta), pero no a una hora fija. El restablecimiento diario lo corre el cron del propio VPS, que entra al contenedor de la api con `docker exec`. Así el comando tiene las mismas variables de entorno que el servicio.
 
-- **Expresión:** `0 4 * * *`. El servidor de Easypanel está en el huso de Buenos Aires (UTC-3), así que son las 4:00 de Argentina. Si el servidor estuviera en UTC, sería `0 7 * * *`.
-- **Comando:** `node dist/demo/restablecer-demo.js`
+1. Entrar al VPS por SSH (o con la terminal del navegador del panel de Hostinger, que es lo mismo). La consola del servicio en Easypanel no sirve: queda dentro del contenedor, donde no están `docker` ni el cron del servidor.
+2. Ver el nombre del contenedor de la api, con su imagen para no confundirlo con el de la base:
+
+   ```bash
+   docker ps --format '{{.Names}}\t{{.Image}}'
+   ```
+
+   Easypanel los nombra `proyecto_servicio.1.xxxx`. Se usa la parte de antes de `.1.`, porque el final cambia en cada despliegue. En la demo es `n8n-bourder_app-estudioejemplo`.
+
+3. Probar el comando a mano. Tiene que terminar con "Datos de muestra restablecidos. Fechas corridas N días.":
+
+   ```bash
+   docker exec $(docker ps -q -f name=n8n-bourder_app-estudioejemplo. | head -n 1) node dist/demo/restablecer-demo.js
+   ```
+
+4. Ver el huso del servidor con `date`. El VPS de la demo está en UTC, así que las 4:00 de Argentina (UTC-3) son las 7:00 del servidor: `0 7 * * *`. Si `date` mostrara `-03`, sería `0 4 * * *`. Las fechas de los datos de muestra no dependen del huso del servidor: el comando calcula el día con la hora de Argentina.
+5. Agregar la tarea con `crontab -e` (la primera vez pregunta el editor: `1`, nano). Al final del archivo, en una sola línea:
+
+   ```
+   0 7 * * * docker exec $(docker ps -q -f name=n8n-bourder_app-estudioejemplo. | head -n 1) node dist/demo/restablecer-demo.js >> /var/log/demo-restablecer.log 2>&1
+   ```
+
+   En nano se guarda con Ctrl+O y Enter, y se sale con Ctrl+X. `crontab -l` muestra la tarea guardada.
+
+6. Al día siguiente, `tail /var/log/demo-restablecer.log` muestra el resultado.
+
+El filtro `name=` busca contenedores cuyo nombre _contiene_ el texto. Si otro contenedor también lo contiene (por ejemplo, la base del mismo proyecto), `head -n 1` puede elegir el equivocado, y el comando falla con `exec: "node": executable file not found in $PATH`. En ese caso, filtrar por el nombre exacto del servicio de Swarm: `-f label=com.docker.swarm.service.name=n8n-bourder_app-estudioejemplo`. Si cambia el nombre del proyecto o del servicio en Easypanel, hay que actualizar la línea del cron.
 
 El comando termina con código 0 si restableció los datos y con 1 si se negó o falló, con un mensaje en la salida.
 

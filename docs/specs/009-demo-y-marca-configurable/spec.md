@@ -136,7 +136,7 @@ Este sistema nació para un estudio en particular, y su identidad está repartid
 - Cambiar la cantidad de servicios, de pestañas o sus direcciones (RF-11).
 - Un aviso de "sitio de demostración" en el sitio público.
 - Restablecer los datos desde la interfaz, o en otro horario que el de RF-24 (salvo a mano, desde la consola).
-- Cambiar el contenido de los datos de muestra, salvo correr sus fechas (RF-22) y quitar del encabezado los datos del estudio original (RF-12).
+- Cambiar el contenido de los datos de muestra, salvo correr sus fechas (RF-22) y quitar del encabezado los datos del estudio original (RF-12). Ampliado por la spec 010: los datos de muestra suman dos PDF ficticios.
 - Fotos de las integrantes de la marca de ejemplo.
 - Reescribir las specs 001 a 008.
 

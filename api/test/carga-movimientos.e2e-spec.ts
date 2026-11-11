@@ -110,6 +110,8 @@ describe('carga de movimientos', () => {
         { campo: 'textoCliente', anterior: null, nuevo: null },
         { campo: 'visible', anterior: null, nuevo: true },
         { campo: 'anulado', anterior: null, nuevo: false },
+        // Desde la spec 010, el PDF es un dato más.
+        { campo: 'pdf', anterior: null, nuevo: null },
       ],
     });
 

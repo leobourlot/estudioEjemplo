@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientLinkService } from '../causas/vinculo-cliente.service.js';
+import { PdfsService } from '../pdfs/pdfs.service.js';
+import { movementPdfName } from '../pdfs/reglas-pdf.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { type MovimientoCliente, toMovimientoCliente } from './movimiento-detalle.js';
 import { Movimiento } from './movimiento.entity.js';
@@ -32,6 +34,7 @@ export class ClientVisibilityService {
     @InjectRepository(Movimiento) private readonly movimientos: Repository<Movimiento>,
     @InjectRepository(Usuario) private readonly usuarios: Repository<Usuario>,
     private readonly links: ClientLinkService,
+    private readonly pdfs: PdfsService,
   ) {}
 
   /**
@@ -83,6 +86,26 @@ export class ClientVisibilityService {
       throw new NotFoundException(MOVIMIENTOS_MESSAGES.notFound);
     }
     return toMovimientoCliente(movimiento, ahora);
+  }
+
+  /**
+   * El PDF de un movimiento que el cliente puede ver (spec 010, RF-33): el movimiento es visible,
+   * no está anulado, pertenece a la causa indicada, el cliente está vinculado a ella y el PDF está
+   * marcado como visible. Si falla cualquiera de esas condiciones, o el movimiento no tiene PDF,
+   * devuelve null: el portal responde siempre el mismo 404 (RF-37).
+   */
+  async findVisiblePdf(
+    clienteId: number,
+    causaId: number,
+    movimientoId: number,
+  ): Promise<{ contenido: Buffer; nombre: string } | null> {
+    const movimiento = await this.movimientos.findOne({
+      select: { id: true, fecha: true, tipo: true, pdfId: true },
+      where: { id: movimientoId, causaId, visible: true, anulado: false, pdfVisible: true },
+    });
+    if (!movimiento?.pdfId || !(await this.canSeeCausa(clienteId, causaId))) return null;
+    const pdf = await this.pdfs.findContent(movimiento.pdfId);
+    return pdf && { contenido: pdf.contenido, nombre: movementPdfName(movimiento, pdf.codigo) };
   }
 
   /**

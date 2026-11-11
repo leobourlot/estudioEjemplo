@@ -30,6 +30,16 @@ export interface FalloResumen {
   sumario: string;
   palabrasClave: PalabraClaveResumen[];
   activo: boolean;
+  /** Si tiene PDF, para la leyenda "PDF" del listado (spec 010, RF-32). */
+  tienePdf: boolean;
+}
+
+/** El PDF en la ficha de un fallo (spec 010, RF-32, RF-40). Nunca su contenido. */
+export interface PdfFalloDetalle {
+  codigo: string;
+  tamano: number;
+  subidoPor: AutorResumen;
+  subidoEn: Date;
 }
 
 /** Ficha de un fallo (RF-19). */
@@ -39,6 +49,7 @@ export interface FalloDetalle extends FalloResumen {
   creadoEn: Date;
   modificadoPor: AutorResumen | null;
   modificadoEn: Date | null;
+  pdf: PdfFalloDetalle | null;
 }
 
 /** El fallo con el que coincide otro en el aviso de repetido (RF-18). */
@@ -75,10 +86,11 @@ export function toFalloResumen(fallo: Fallo, palabras: readonly PalabraClave[]):
     sumario: fallo.sumario,
     palabrasClave: sortedKeywords(palabras),
     activo: fallo.activo,
+    tienePdf: fallo.pdfId !== null,
   };
 }
 
-/** Espera el fallo con creadoPor y modificadoPor cargados. */
+/** Espera el fallo con creadoPor, modificadoPor y pdf.subidoPor cargados. */
 export function toFalloDetalle(fallo: Fallo, palabras: readonly PalabraClave[]): FalloDetalle {
   return {
     ...toFalloResumen(fallo, palabras),
@@ -87,6 +99,14 @@ export function toFalloDetalle(fallo: Fallo, palabras: readonly PalabraClave[]):
     creadoEn: fallo.creadoEn,
     modificadoPor: fallo.modificadoPor ? toAutorResumen(fallo.modificadoPor) : null,
     modificadoEn: fallo.modificadoEn,
+    pdf: fallo.pdf
+      ? {
+          codigo: fallo.pdf.codigo,
+          tamano: fallo.pdf.tamano,
+          subidoPor: toAutorResumen(fallo.pdf.subidoPor),
+          subidoEn: fallo.pdf.subidoEn,
+        }
+      : null,
   };
 }
 

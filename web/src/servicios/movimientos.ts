@@ -1,3 +1,4 @@
+import { pdfForm } from './archivo-pdf';
 import { httpClient, type HttpClient } from './cliente-http';
 
 /**
@@ -19,7 +20,7 @@ export type TipoMovimiento =
 export type AccionMovimiento = 'carga' | 'modificacion' | 'anulacion' | 'restauracion';
 
 export type CampoMovimiento =
-  'fecha' | 'tipo' | 'descripcion' | 'textoCliente' | 'visible' | 'anulado';
+  'fecha' | 'tipo' | 'descripcion' | 'textoCliente' | 'visible' | 'anulado' | 'pdf';
 
 export type FiltroVisibilidad = 'todos' | 'visibles' | 'ocultos';
 
@@ -45,12 +46,30 @@ export interface MovimientoResumen {
   esFechaFutura: boolean;
   creadoPor: AutorResumen;
   creadoEn: string;
+  /** Si tiene PDF y si es visible para el cliente; null si no tiene (spec 010, RF-30). */
+  pdf: { visible: boolean } | null;
+}
+
+/** El PDF en la consulta de un movimiento (spec 010, RF-31). `subidoEn` es ISO. */
+export interface PdfDetalle {
+  codigo: string;
+  tamano: number;
+  visible: boolean;
+  subidoPor: AutorResumen;
+  subidoEn: string;
+}
+
+/** El PDF como lo registra el historial de cambios (spec 010, RF-21). */
+export interface PdfCambio {
+  codigo: string;
+  tamano: number;
+  visible: boolean;
 }
 
 export interface CambioCampo {
   campo: CampoMovimiento;
-  anterior: string | boolean | null;
-  nuevo: string | boolean | null;
+  anterior: string | boolean | PdfCambio | null;
+  nuevo: string | boolean | PdfCambio | null;
 }
 
 export interface CambioMovimiento {
@@ -61,7 +80,8 @@ export interface CambioMovimiento {
   cambios: CambioCampo[];
 }
 
-export interface MovimientoDetalle extends MovimientoResumen {
+export interface MovimientoDetalle extends Omit<MovimientoResumen, 'pdf'> {
+  pdf: PdfDetalle | null;
   causaId: number;
   causaActiva: boolean;
   textoCliente: string | null;
@@ -97,6 +117,8 @@ export interface CreateMovimientoData {
   descripcion: string;
   textoCliente?: string | null;
   visible?: boolean;
+  /** Solo con un archivo: sin ella, el PDF nace oculto (spec 010, RF-16). */
+  pdfVisible?: boolean;
 }
 
 /** Solo los datos que cambian; null borra el texto para el cliente. */
@@ -106,6 +128,10 @@ export interface UpdateMovimientoData {
   descripcion?: string;
   textoCliente?: string | null;
   visible?: boolean;
+  /** La visibilidad del PDF nuevo o del guardado (spec 010, RF-16, RF-17). */
+  pdfVisible?: boolean;
+  /** Quita el PDF guardado (spec 010, RF-14). */
+  quitarPdf?: true;
 }
 
 const base = (causaId: number) => `/panel/causas/${causaId}/movimientos`;
@@ -135,11 +161,30 @@ export function createMovimientosService(http: HttpClient) {
     getMovement: (causaId: number, movimientoId: number) =>
       http.get<MovimientoDetalle>(`${base(causaId)}/${movimientoId}`),
 
-    createMovement: (causaId: number, data: CreateMovimientoData) =>
-      http.post<MovimientoDetalle>(base(causaId), data),
+    /** Con un PDF, el pedido es un formulario con `datos` y `pdf` (spec 010, plan 010, D2). */
+    createMovement: (causaId: number, data: CreateMovimientoData, pdf?: File) =>
+      pdf
+        ? http.sendForm<MovimientoDetalle>('POST', base(causaId), pdfForm(data, pdf))
+        : http.post<MovimientoDetalle>(base(causaId), data),
 
-    updateMovement: (causaId: number, movimientoId: number, changes: UpdateMovimientoData) =>
-      http.patch<MovimientoDetalle>(`${base(causaId)}/${movimientoId}`, changes),
+    /** Con un PDF nuevo, el pedido es un formulario con `datos` y `pdf` (plan 010, D2). */
+    updateMovement: (
+      causaId: number,
+      movimientoId: number,
+      changes: UpdateMovimientoData,
+      pdf?: File,
+    ) =>
+      pdf
+        ? http.sendForm<MovimientoDetalle>(
+            'PATCH',
+            `${base(causaId)}/${movimientoId}`,
+            pdfForm(changes, pdf),
+          )
+        : http.patch<MovimientoDetalle>(`${base(causaId)}/${movimientoId}`, changes),
+
+    /** El PDF del movimiento, con su nombre (spec 010, RF-28). */
+    getPdf: (causaId: number, movimientoId: number) =>
+      http.getFile(`${base(causaId)}/${movimientoId}/pdf`),
 
     annulMovement: (causaId: number, movimientoId: number) =>
       http.post<MovimientoDetalle>(`${base(causaId)}/${movimientoId}/anular`),

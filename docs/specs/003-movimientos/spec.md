@@ -178,7 +178,7 @@ Hoy el estudio registra las causas, sus partes y sus abogados (spec 002), pero n
 
 ## Fuera de alcance
 - La consulta de movimientos por parte del cliente y cómo los ve en el portal (spec 004). Esta spec solo define la regla de visibilidad y los datos que se le pueden mostrar.
-- Documentos adjuntos a los movimientos (escritos, resoluciones en PDF).
+- Documentos adjuntos a los movimientos (escritos, resoluciones en PDF). Ampliado por la spec 010: un PDF por movimiento.
 - Avisos al cliente por email o WhatsApp sobre movimientos nuevos.
 - Importación de movimientos desde sistemas judiciales u otras fuentes.
 - Vencimientos, plazos, agenda y recordatorios de audiencias.

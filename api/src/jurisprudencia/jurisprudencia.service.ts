@@ -1,8 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, type EntityManager, In, Repository } from 'typeorm';
 import { QUESTION_CODES, QuestionException } from '../causas/preguntas.js';
 import { toSearchableCaseNumber } from '../causas/validadores/texto-causa.js';
+import type { ArchivoPdfRecibido } from '../pdfs/archivo-pdf.decorator.js';
+import { PdfsService } from '../pdfs/pdfs.service.js';
+import { PDF_MESSAGES, rulingPdfName } from '../pdfs/reglas-pdf.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import type { CreateFalloDto } from './dto/crear-fallo.dto.js';
 import type { ListFallosQueryDto } from './dto/listar-fallos.dto.js';
@@ -84,11 +92,12 @@ export const JURISPRUDENCIA_MESSAGES = {
   alreadyActive: 'El fallo ya está activo',
 } as const;
 
-/** Relaciones que necesita toFalloDetalle. */
+/** Relaciones que necesita toFalloDetalle. La del PDF no trae su contenido (plan 010, D1). */
 const DETAIL_RELATIONS = {
   creadoPor: true,
   modificadoPor: true,
   palabrasClave: { palabraClave: true },
+  pdf: { subidoPor: true },
 };
 
 /** El número sin separadores, para la búsqueda (RF-23); null si el fallo no tiene número. */
@@ -102,16 +111,23 @@ export class JurisprudenciaService {
     private readonly dataSource: DataSource,
     @InjectRepository(Fallo) private readonly fallos: Repository<Fallo>,
     private readonly palabrasClave: PalabrasClaveService,
+    private readonly pdfs: PdfsService,
   ) {}
 
   /**
    * Carga un fallo activo con su autor (RF-16). Las palabras clave se resuelven contra el
    * catálogo en la misma transacción que guarda el fallo: si algo falla, no queda ninguna
-   * palabra nueva (RF-12).
+   * palabra nueva (RF-12). Con un PDF, se guarda en la misma transacción (spec 010, RF-24): si
+   * algo falla, no queda ni el fallo ni el PDF.
    */
-  async create(actor: Usuario, dto: CreateFalloDto): Promise<FalloDetalle> {
+  async create(
+    actor: Usuario,
+    dto: CreateFalloDto,
+    archivo: ArchivoPdfRecibido | null = null,
+  ): Promise<FalloDetalle> {
+    if (archivo) this.pdfs.assertValid(archivo.contenido);
     // La pregunta de repetido va antes de escribir nada: un 409 no deja palabras nuevas en
-    // el catálogo (RF-12, RF-18).
+    // el catálogo (RF-12, RF-18) ni el PDF (spec 010, RF-25). No mira el PDF.
     if (dto.confirmarRepetido !== true) {
       await this.askIfRepeated(this.dataSource.manager, {
         caratula: dto.caratula,
@@ -123,6 +139,7 @@ export class JurisprudenciaService {
     const id = await this.dataSource.transaction(async (manager) => {
       const palabraIds = await this.palabrasClave.resolve(manager, dto.palabrasClave);
       const numero = dto.numero ?? null;
+      const pdf = archivo ? await this.pdfs.create(manager, archivo.contenido, actor) : null;
       const fallo = await manager.save(
         manager.create(Fallo, {
           caratula: dto.caratula,
@@ -134,6 +151,7 @@ export class JurisprudenciaService {
           sumario: dto.sumario,
           enlace: dto.enlace ?? null,
           activo: true,
+          pdfId: pdf?.id ?? null,
           creadoPorId: actor.id,
           creadoEn: new Date(),
         }),
@@ -152,8 +170,21 @@ export class JurisprudenciaService {
    * hizo (RF-2). El aviso de repetido se controla solo si cambia la carátula, el tribunal, el
    * número o la fecha (RF-18). Un PATCH que no cambia nada no deja rastro: no es una
    * modificación.
+   *
+   * También adjunta, reemplaza o quita el PDF (spec 010, RF-24), después de la pregunta de
+   * repetido, que no lo mira (RF-25). Un PDF reemplazado o quitado se borra (RF-14); al
+   * reemplazar, el anterior se borra antes de guardar el nuevo, así no suma para el tope de la
+   * demo (RF-41).
    */
-  async update(actor: Usuario, id: number, dto: UpdateFalloDto): Promise<FalloDetalle> {
+  async update(
+    actor: Usuario,
+    id: number,
+    dto: UpdateFalloDto,
+    archivo: ArchivoPdfRecibido | null = null,
+  ): Promise<FalloDetalle> {
+    if (archivo && dto.quitarPdf) throw new BadRequestException(PDF_MESSAGES.attachAndRemove);
+    if (archivo) this.pdfs.assertValid(archivo.contenido);
+
     await this.withLockedFallo(id, async (manager, fallo) => {
       if (!fallo.activo) throw new ConflictException(JURISPRUDENCIA_MESSAGES.deactivated);
       const antes = snapshot(fallo);
@@ -178,7 +209,17 @@ export class JurisprudenciaService {
       const keywordsChanged =
         dto.palabrasClave !== undefined &&
         !sameTexts(dto.palabrasClave, await this.keywordTexts(manager, id));
-      if (!changed(RULING_FIELDS) && !keywordsChanged) return;
+      const pdfABorrar = dto.quitarPdf ? fallo.pdfId : null;
+      if (!changed(RULING_FIELDS) && !keywordsChanged && !archivo && pdfABorrar === null) return;
+
+      let pdfId = pdfABorrar === null ? fallo.pdfId : null;
+      if (archivo) {
+        if (fallo.pdfId !== null) {
+          await manager.update(Fallo, id, { pdfId: null });
+          await this.pdfs.remove(manager, fallo.pdfId);
+        }
+        pdfId = (await this.pdfs.create(manager, archivo.contenido, actor)).id;
+      }
 
       if (keywordsChanged) {
         const palabraIds = await this.palabrasClave.resolve(manager, dto.palabrasClave!);
@@ -191,9 +232,12 @@ export class JurisprudenciaService {
       await manager.update(Fallo, id, {
         ...despues,
         numeroBusqueda: searchableNumber(despues.numero),
+        pdfId,
         modificadoPorId: actor.id,
         modificadoEn: new Date(),
       });
+      // Después de desvincularlo, para no violar la clave foránea (plan 010, migración).
+      if (pdfABorrar !== null) await this.pdfs.remove(manager, pdfABorrar);
     });
     return this.findOne(id);
   }
@@ -337,6 +381,20 @@ export class JurisprudenciaService {
     const builder = this.fallos.createQueryBuilder('fallo').select('fallo.id');
     if (!incluirDesactivados) builder.where('fallo.activo = 1');
     return (await builder.limit(1).getRawOne()) !== undefined;
+  }
+
+  /**
+   * El PDF de un fallo, para un integrante (spec 010, RF-28), también desactivado (RF-26). Fallo
+   * inexistente o sin PDF responden el mismo 404 (RF-37). El nombre usa la fecha vigente (RF-7).
+   */
+  async getPdf(id: number): Promise<{ contenido: Buffer; nombre: string }> {
+    const fallo = await this.fallos.findOne({
+      select: { id: true, fecha: true, pdfId: true },
+      where: { id },
+    });
+    const pdf = fallo?.pdfId ? await this.pdfs.findContent(fallo.pdfId) : null;
+    if (!fallo || !pdf) throw new NotFoundException(PDF_MESSAGES.notFound);
+    return { contenido: pdf.contenido, nombre: rulingPdfName(fallo, pdf.codigo) };
   }
 
   /** Consulta de un fallo con sus palabras clave y su autoría, activo o desactivado (RF-19, RF-30). */

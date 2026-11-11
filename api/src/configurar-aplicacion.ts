@@ -52,9 +52,11 @@ export function configureApp(app: NestExpressApplication): void {
   );
 
   // Con una función, a un origen no permitido no se le envía ningún encabezado CORS.
+  // Content-Disposition se expone para que la web lea el nombre de un PDF (plan 010, D5).
   app.enableCors({
     origin: (origin, callback) =>
       callback(null, origin !== undefined && allowedOrigins.includes(origin)),
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   });
 }

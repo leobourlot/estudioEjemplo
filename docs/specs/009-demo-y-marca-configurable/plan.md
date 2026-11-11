@@ -94,8 +94,9 @@ export const MARCA: Marca = {
 - Los tests nunca insertan esa fila. Tampoco hace falta borrarla: `clearTables` no vacía `base_demo`, y en la base de tests nunca se corre `demo:marcar`, porque se niega por el nombre.
 - Alternativa descartada: una variable con el nombre de la base de la demo. No distingue dos bases con el mismo nombre en servidores distintos, y una copia de variables entre servicios de Easypanel la arrastra. La marca, en cambio, vive en la base misma.
 
-### D7. El restablecimiento es un comando de consola disparado por un cron de Easypanel [RF-20 a RF-24]
-- `node dist/demo/restablecer-demo.js` en el servicio de la api, programado en Easypanel con `0 4 * * *`. El servidor está en el huso de Buenos Aires (UTC-3, sin horario de verano), así que son las 4:00 de Argentina. Para desarrollo, `pnpm --filter api demo:restablecer`.
+### D7. El restablecimiento es un comando de consola disparado por el cron del VPS [RF-20 a RF-24]
+- `node dist/demo/restablecer-demo.js` en el contenedor de la api. Easypanel no programa tareas (su sección Scripts corre comandos solo a mano), así que lo dispara el cron del VPS con `docker exec`. El VPS está en UTC, así que la expresión es `0 7 * * *`: las 4:00 de Argentina (UTC-3, sin horario de verano). Para desarrollo, `pnpm --filter api demo:restablecer`.
+- Corregido al publicar (06/11/2026): este punto suponía una tarea programada de Easypanel con `0 4 * * *` en el huso de Buenos Aires.
 - Vacía con `DELETE`, dentro de una transacción, y no con `TRUNCATE`: en MySQL, `TRUNCATE` cierra la transacción en curso, y RF-20 pide que un error deje la base como estaba. Los id siguen creciendo de un día al otro; no se usan para nada visible, así que se acepta.
 - Carga `datos-de-muestra.sql` dentro de esa misma transacción. El archivo trae su propio `START TRANSACTION;` y `COMMIT;`, que se le quitan antes de ejecutarlo, porque un `START TRANSACTION` dentro de otra transacción la confirma. El archivo queda igual, y se puede seguir cargando a mano como hasta ahora. Un test verifica que el SQL no tiene otras sentencias que cierren la transacción (`TRUNCATE`, `CREATE`, `ALTER`, `DROP`, `COMMIT` ni `START TRANSACTION` fuera de la primera y la última línea).
 - Corre las fechas con un `UPDATE … = … + INTERVAL n DAY` por columna. Las columnas salen de `information_schema`: todas las `date`, `datetime` y `timestamp` de la base, salvo `fallos.fecha`, `migraciones` y `base_demo`. Así, una tabla nueva con fechas queda incluida sin tocar el comando.
@@ -263,11 +264,11 @@ resetSampleData(qr, sql, dias):
 ```
 Vaciar `sesiones` cierra todas las sesiones [RF-23]. Los datos de muestra hacen principal a Carolina Ferreyra, porque la tabla queda sin principal.
 
-### Easypanel [RF-24]
+### Easypanel y el VPS [RF-24]
 En el README:
 - La variable `MODO_DEMO=true` del servicio de la api y `VITE_MODO_DEMO=true` en la construcción de la web.
 - Correr una vez `node dist/demo/marcar-base-demo.js` desde la consola del servicio.
-- Crear la tarea programada del servicio con `0 4 * * *` y el comando `node dist/demo/restablecer-demo.js`. El servidor de Easypanel está en el huso de Buenos Aires (UTC-3). Si alguna vez pasara a UTC, la expresión sería `0 7 * * *`.
+- Cargar en el cron del VPS (por SSH) `0 7 * * *` con `docker exec` sobre el contenedor de la api y el comando `node dist/demo/restablecer-demo.js`. El VPS está en UTC; si estuviera en el huso de Buenos Aires, sería `0 4 * * *`.
 
 ## Estrategia de tests
 
@@ -337,7 +338,7 @@ En el README:
 - `README.md`:
   - El nombre `estudioJuridicoSDD` y la spec 009 en la hoja de ruta.
   - "Cambiar de marca": editar `web/src/servicios/marca.ts`, reemplazar `web/public/marca/` y correr los tests.
-  - "Modo demo": las variables, `demo:marcar`, `demo:restablecer` y la tarea programada de Easypanel.
+  - "Modo demo": las variables, `demo:marcar`, `demo:restablecer` y la tarea programada del VPS.
 - `AGENTS.md` y `docs/constitution.md`: el nombre del proyecto.
 - `web/.env.example` (`VITE_MODO_DEMO`) y `api/.env.example` (`MODO_DEMO`).
 
@@ -360,5 +361,5 @@ En el README:
 ## Riesgos
 - **Unos 50 archivos de tests cambian.** Se hacen por grupos, con los unitarios de cada grupo antes de seguir.
 - **Los e2e comparten la base.** Ningún e2e corre mientras se edita la api. El de restablecimiento vacía todo al terminar.
-- **El huso del cron de Easypanel.** El servidor está en el huso de Buenos Aires (UTC-3), así que el cron usa `0 4 * * *`. Al publicar se verifica que el primer restablecimiento corra a las 4:00.
+- **El huso del cron.** El VPS está en UTC, así que el cron usa `0 7 * * *` para las 4:00 de Argentina. Verificado al publicar: el 08/11/2026 corrió a las 4:00.
 - **El plugin de `@font-face` en Tailwind.** Si no generara las reglas con `unicode-range`, la alternativa es generarlas en `index.html` con el mismo plugin de Vite de D10. La tarea lo verifica con un test.

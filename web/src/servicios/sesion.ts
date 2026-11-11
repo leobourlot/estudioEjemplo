@@ -36,7 +36,21 @@ export const ROUTES = {
   portal: '/portal',
 } as const;
 
-export type AccessDecision = { allowed: true } | { allowed: false; redirectTo: string };
+export type AccessDecision =
+  | { allowed: true }
+  | { allowed: false; redirectTo: string; notice?: string };
+
+/** Aviso al llevar a un usuario desde un PDF que no puede ver a su inicio (spec 010, RF-37). */
+export const PDF_NOT_FOUND_NOTICE = 'No existe ese PDF';
+
+/** El aviso que llega en el `state` de una navegación (`{ aviso }`), o null. */
+export function noticeFromState(state: unknown): string | null {
+  const aviso = (state as { aviso?: unknown } | null)?.aviso;
+  return typeof aviso === 'string' ? aviso : null;
+}
+
+/** Las rutas que abren un PDF (plan 010, "Rutas"): terminan en /pdf. */
+const isPdfRoute = (path: string) => /^\/(panel|portal)\/.+\/pdf$/.test(path);
 
 const isUnder = (path: string, section: string) =>
   path === section || path.startsWith(`${section}/`);
@@ -67,9 +81,13 @@ export function canAccess(path: string, usuario: UsuarioPropio | null): AccessDe
   if (path === ROUTES.changePassword) return { allowed: true };
   if (usuario.debeCambiarContrasena) return redirect(ROUTES.changePassword);
 
-  // Cada rol en su sección (RF-20).
+  // Cada rol en su sección (RF-20). Desde un PDF de la otra sección, con el aviso de la spec 010
+  // (RF-37), el mismo para cualquier motivo.
   const ownSection = sectionOf(usuario);
-  return isUnder(path, ownSection) ? { allowed: true } : redirect(ownSection);
+  if (isUnder(path, ownSection)) return { allowed: true };
+  return isPdfRoute(path)
+    ? { allowed: false, redirectTo: ownSection, notice: PDF_NOT_FOUND_NOTICE }
+    : redirect(ownSection);
 }
 
 export function createSessionService(http: HttpClient) {

@@ -4,8 +4,10 @@ import type {
   CampoMovimiento,
   FiltroVisibilidad,
   MovimientoDetalle,
+  PdfCambio,
   TipoMovimiento,
 } from './movimientos';
+import { formatPdfSize } from './archivo-pdf';
 import { EMPTY_VALUE, formatDateTime } from './presentacion';
 
 /** Cómo se muestran los datos de los movimientos. Funciones puras, sin React (principio 3). */
@@ -43,6 +45,8 @@ const FIELD_OPTIONS: readonly [CampoMovimiento, string][] = [
   ['textoCliente', 'Texto para el cliente'],
   ['visible', 'Visible para el cliente'],
   ['anulado', 'Anulado'],
+  // Spec 010, RF-21.
+  ['pdf', 'PDF'],
 ];
 
 const labelFrom =
@@ -85,9 +89,20 @@ export function authorName(autor: AutorResumen): string {
   return autor.activo ? name : `${name} (desactivado)`;
 }
 
-/** Un valor del historial de cambios como se muestra (RF-22). */
-export function formatChangeValue(campo: CampoMovimiento, valor: string | boolean | null): string {
-  if (valor === null) return EMPTY_VALUE;
+/**
+ * Un valor del historial de cambios como se muestra (RF-22). El PDF, con su código, su tamaño y
+ * su visibilidad (spec 010, RF-21): "K7Q2MX, 830 KB, oculto para el cliente", o "Sin PDF".
+ */
+export function formatChangeValue(
+  campo: CampoMovimiento,
+  valor: string | boolean | PdfCambio | null,
+): string {
+  if (campo === 'pdf') {
+    if (valor === null || typeof valor !== 'object') return 'Sin PDF';
+    const visibilidad = valor.visible ? 'visible para el cliente' : 'oculto para el cliente';
+    return `${valor.codigo}, ${formatPdfSize(valor.tamano)}, ${visibilidad}`;
+  }
+  if (valor === null || typeof valor === 'object') return EMPTY_VALUE;
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
   if (campo === 'fecha') return formatMovementDate(valor);
   if (campo === 'tipo') return tipoMovimientoLabel(valor as TipoMovimiento);

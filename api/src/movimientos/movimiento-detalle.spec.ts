@@ -37,6 +37,9 @@ function movement(overrides: Partial<Movimiento> = {}): Movimiento {
     modificadoPorId: 2,
     modificadoPor: user(2, false),
     modificadoEn: new Date('2026-10-02T12:00:00Z'),
+    pdfId: null,
+    pdf: null,
+    pdfVisible: false,
     cambios: [],
     ...overrides,
   } as Movimiento;
@@ -57,14 +60,24 @@ const leaksAccountData = (value: unknown) =>
   /email|contrasena|@estudio\.com|\$2b\$/.test(JSON.stringify(value));
 
 describe('toMovimientoCliente (RF-31; spec 004, RF-21)', () => {
-  it('tiene solo id, fecha, tipo, texto y la marca de fecha futura', () => {
+  it('tiene solo id, fecha, tipo, texto, la marca de fecha futura y si tiene un PDF visible', () => {
     expect(toMovimientoCliente(movement(), NOW)).toEqual({
       id: 7,
       fecha: '2026-10-06',
       tipo: 'providencia',
       texto: 'Descripción técnica interna.',
       esFechaFutura: false,
+      // Spec 010, RF-34 y RF-35.
+      tienePdf: false,
     });
+  });
+
+  it('tienePdf solo con un PDF marcado como visible (spec 010, RF-33, RF-35)', () => {
+    expect(toMovimientoCliente(movement({ pdfId: 9, pdfVisible: true }), NOW).tienePdf).toBe(true);
+    expect(toMovimientoCliente(movement({ pdfId: 9, pdfVisible: false }), NOW).tienePdf).toBe(false);
+    expect(toMovimientoCliente(movement({ pdfId: null, pdfVisible: false }), NOW).tienePdf).toBe(
+      false,
+    );
   });
 
   it('con texto para el cliente, usa ese texto y nunca incluye la descripción', () => {
@@ -76,13 +89,22 @@ describe('toMovimientoCliente (RF-31; spec 004, RF-21)', () => {
       tipo: 'providencia',
       texto: 'El juez fijó audiencia.',
       esFechaFutura: false,
+      tienePdf: false,
     });
     expect(JSON.stringify(cliente)).not.toContain('Descripción técnica');
   });
 
   it('no incluye autores, fechas de registro, cambios ni la marca de anulado', () => {
     const cliente = toMovimientoCliente(movement({ cambios: [change(1, user(1))] }), NOW);
-    expect(Object.keys(cliente).sort()).toEqual(['esFechaFutura', 'fecha', 'id', 'texto', 'tipo']);
+    // tienePdf: spec 010, RF-35. Nada más del PDF.
+    expect(Object.keys(cliente).sort()).toEqual([
+      'esFechaFutura',
+      'fecha',
+      'id',
+      'texto',
+      'tienePdf',
+      'tipo',
+    ]);
   });
 
   it('marca la fecha futura en un movimiento posterior al día actual en Buenos Aires', () => {
@@ -107,6 +129,8 @@ describe('toMovimientoResumen (RF-24, RF-36)', () => {
       esFechaFutura: true,
       creadoPor: { id: 1, nombre: 'Nombre1', apellido: 'Apellido1', activo: true },
       creadoEn: new Date('2026-10-01T12:00:00Z'),
+      // Sin PDF (spec 010, RF-30).
+      pdf: null,
     });
   });
 

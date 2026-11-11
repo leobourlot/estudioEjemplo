@@ -17,6 +17,7 @@ const MOVEMENT: MovementData = {
   textoCliente: null,
   visible: false,
   anulado: false,
+  pdf: null,
 };
 
 describe('visibleText (RF-7)', () => {
@@ -82,6 +83,8 @@ describe('loadChanges (RF-20)', () => {
       { campo: 'textoCliente', anterior: null, nuevo: null },
       { campo: 'visible', anterior: null, nuevo: true },
       { campo: 'anulado', anterior: null, nuevo: false },
+      // Desde la spec 010, el PDF es un dato más.
+      { campo: 'pdf', anterior: null, nuevo: null },
     ]);
   });
 });

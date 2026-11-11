@@ -37,6 +37,10 @@ export function FilaFallo({ fallo }: { fallo: FalloResumen }) {
         {!fallo.activo && (
           <span className={`${badgeClass} bg-slate-200 text-slate-700`}>Desactivado</span>
         )}
+        {/* Spec 010, RF-32. */}
+        {fallo.tienePdf && (
+          <span className={`${badgeClass} bg-slate-100 text-slate-700`}>PDF</span>
+        )}
       </div>
 
       <Link

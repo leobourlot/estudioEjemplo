@@ -4,8 +4,9 @@ import { FormularioFallo } from '../componentes/FormularioFallo';
 import { PreguntaFalloRepetido } from '../componentes/PreguntaFalloRepetido';
 import { useJurisprudenciaService } from '../componentes/ProveedorServicios';
 import { useMantenerSesion } from '../componentes/useMantenerSesion';
-import { ApiError, errorMessage } from '../servicios/cliente-http';
+import { errorMessage } from '../servicios/cliente-http';
 import { buildCreateRulingData, EMPTY_RULING_FORM } from '../servicios/formulario-fallo';
+import { afterSaveError, initialPdfState, pdfChanges } from '../servicios/formulario-pdf';
 import { pendingQuestion, type PendingQuestion, type QuestionOption } from '../servicios/preguntas';
 import { CARD, PAGE, PAGE_TITLE } from '../componentes/estilos-aplicacion';
 
@@ -20,29 +21,37 @@ export function PanelFalloNuevo() {
   const navigate = useNavigate();
   const notifyTyping = useMantenerSesion();
   const [form, setForm] = useState(EMPTY_RULING_FORM);
+  const [pdf, setPdf] = useState(() => initialPdfState(null));
   const [question, setQuestion] = useState<PendingQuestion | null>(null);
   const [apiProblems, setApiProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
 
+  /**
+   * La carga con su PDF, si hay, en un solo pedido (spec 010, RF-24). La respuesta a la pregunta
+   * de repetido vuelve a enviar el mismo archivo, sin elegirlo de nuevo (RF-25).
+   */
   async function save(confirmarRepetido: boolean) {
     setEnviando(true);
     setApiProblems([]);
     setQuestion(null);
     try {
-      const fallo = await jurisprudencia.createRuling({
+      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: false });
+      const data = {
         ...buildCreateRulingData(form),
+        ...datos,
         ...(confirmarRepetido ? { confirmarRepetido: true } : {}),
-      });
+      };
+      const fallo = await (archivo
+        ? jurisprudencia.createRuling(data, archivo)
+        : jurisprudencia.createRuling(data));
       navigate(`/panel/jurisprudencia/${fallo.id}`);
     } catch (caught) {
       const pending = pendingQuestion(caught);
       if (pending) setQuestion(pending);
       else {
-        setApiProblems(
-          caught instanceof ApiError && caught.messages.length > 0
-            ? caught.messages
-            : [errorMessage(caught)],
-        );
+        const { problems, estado } = afterSaveError(caught, pdf);
+        setApiProblems(problems.length > 0 ? problems : [errorMessage(caught)]);
+        setPdf(estado);
       }
       setEnviando(false);
     }
@@ -69,6 +78,8 @@ export function PanelFalloNuevo() {
           apiProblems={apiProblems}
           enviando={enviando}
           onTyping={notifyTyping}
+          pdf={pdf}
+          onPdfChange={setPdf}
         />
       </div>
     </main>

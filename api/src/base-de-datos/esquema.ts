@@ -13,6 +13,8 @@ import { AgregarAbogadoPatrocinanteAPartes1793145297279 } from '../migraciones/1
 import { AgregarDniAIntegrantes1793318400000 } from '../migraciones/1793318400000-agregar-dni-a-integrantes.js';
 import { HacerOpcionalElFuero1793404800000 } from '../migraciones/1793404800000-hacer-opcional-el-fuero.js';
 import { CrearBaseDemo1793664000000 } from '../migraciones/1793664000000-crear-base-demo.js';
+import { CrearPdfs1794182400000 } from '../migraciones/1794182400000-crear-pdfs.js';
+import { Pdf } from '../pdfs/pdf.entity.js';
 import { ModeloEscrito } from '../modelos-escritos/modelo-escrito.entity.js';
 import { CambioMovimiento } from '../movimientos/cambio-movimiento.entity.js';
 import { Movimiento } from '../movimientos/movimiento.entity.js';
@@ -35,6 +37,7 @@ export const ENTITIES = [
   PalabraClave,
   FalloPalabraClave,
   ModeloEscrito,
+  Pdf,
 ];
 
 export const MIGRATIONS = [
@@ -47,4 +50,5 @@ export const MIGRATIONS = [
   AgregarDniAIntegrantes1793318400000,
   HacerOpcionalElFuero1793404800000,
   CrearBaseDemo1793664000000,
+  CrearPdfs1794182400000,
 ];

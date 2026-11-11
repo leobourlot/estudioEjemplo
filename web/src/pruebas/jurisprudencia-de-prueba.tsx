@@ -30,6 +30,7 @@ export function testFalloResumen(overrides: Partial<FalloResumen> = {}): FalloRe
       { id: 1, texto: 'daño moral' },
     ],
     activo: true,
+    tienePdf: false,
     ...overrides,
   };
 }
@@ -43,6 +44,7 @@ export function testFalloDetalle(overrides: Partial<FalloDetalle> = {}): FalloDe
     creadoEn: '2026-10-01T15:00:00.000Z',
     modificadoPor: null,
     modificadoEn: null,
+    pdf: null,
     ...overrides,
   };
 }
@@ -75,6 +77,7 @@ export function fakeJurisprudenciaService(
     deactivateRuling: vi.fn(),
     reactivateRuling: vi.fn(),
     keepSessionAlive: vi.fn().mockResolvedValue(undefined),
+    getPdf: vi.fn(),
     ...overrides,
   } as FakeJurisprudenciaService;
 }

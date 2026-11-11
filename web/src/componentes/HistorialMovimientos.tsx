@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ApiError, errorMessage } from '../servicios/cliente-http';
+import { errorMessage } from '../servicios/cliente-http';
 import {
   buildCreateMovementData,
   EMPTY_MOVEMENT_FILTERS,
@@ -7,6 +7,7 @@ import {
   type MovementFilters,
   toListQuery,
 } from '../servicios/formulario-movimiento';
+import { afterSaveError, initialPdfState, pdfChanges } from '../servicios/formulario-pdf';
 import type { MovimientoPage } from '../servicios/movimientos';
 import { FilaMovimiento } from './FilaMovimiento';
 import { FiltrosMovimientos } from './FiltrosMovimientos';
@@ -42,6 +43,7 @@ export function HistorialMovimientos({
 
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_MOVEMENT_FORM);
+  const [pdf, setPdf] = useState(() => initialPdfState(null));
   const [apiProblems, setApiProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
 
@@ -70,19 +72,28 @@ export function HistorialMovimientos({
 
   function startCreating() {
     setForm(EMPTY_MOVEMENT_FORM);
+    setPdf(initialPdfState(null));
     setApiProblems([]);
     setCreating(true);
   }
 
+  /** La carga con su PDF, si hay, en un solo pedido (spec 010, RF-10). */
   async function create() {
     setEnviando(true);
+    setApiProblems([]);
     try {
-      await movimientos.createMovement(causaId, buildCreateMovementData(form));
+      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: true });
+      const data = { ...buildCreateMovementData(form), ...datos };
+      await (archivo
+        ? movimientos.createMovement(causaId, data, archivo)
+        : movimientos.createMovement(causaId, data));
       setCreating(false);
       setPagina(1);
       setReloads((count) => count + 1);
     } catch (caught) {
-      setApiProblems(caught instanceof ApiError ? caught.messages : [errorMessage(caught)]);
+      const { problems, estado } = afterSaveError(caught, pdf);
+      setApiProblems(problems);
+      setPdf(estado);
     } finally {
       setEnviando(false);
     }
@@ -113,6 +124,8 @@ export function HistorialMovimientos({
             onCancel={() => setCreating(false)}
             apiProblems={apiProblems}
             enviando={enviando}
+            pdf={pdf}
+            onPdfChange={setPdf}
           />
         </div>
       )}

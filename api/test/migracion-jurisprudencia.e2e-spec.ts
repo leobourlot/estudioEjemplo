@@ -85,6 +85,8 @@ describe('migración de jurisprudencia', () => {
       'IDX_fallos_listado.id',
       'IDX_fallos_repetido.tribunal',
       'IDX_fallos_repetido.numero',
+      // El PDF de cada fallo, de la spec 010.
+      'UQ_fallos_pdf.pdfId',
       'UQ_palabras_clave_clave.clave',
     ]);
     const unique = indexes.find((index) => index.name === 'UQ_palabras_clave_clave');
@@ -105,6 +107,8 @@ describe('migración de jurisprudencia', () => {
       'fallo_palabras_clave.palabraClaveId -> palabras_clave.id',
       'fallos.creadoPorId -> usuarios.id',
       'fallos.modificadoPorId -> usuarios.id',
+      // El PDF de cada fallo, de la spec 010.
+      'fallos.pdfId -> pdfs.id',
     ]);
   });
 

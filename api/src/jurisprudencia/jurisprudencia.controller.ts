@@ -10,8 +10,16 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  type StreamableFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { CurrentUser, Roles } from '../autenticacion/decoradores.js';
+import { ArchivoPdf, type ArchivoPdfRecibido } from '../pdfs/archivo-pdf.decorator.js';
+import { FormularioConPdfInterceptor } from '../pdfs/formulario-con-pdf.interceptor.js';
+import { PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
+import { toPdfResponse } from '../pdfs/respuesta-pdf.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { CreateFalloDto } from './dto/crear-fallo.dto.js';
 import { ListFallosQueryDto } from './dto/listar-fallos.dto.js';
@@ -29,6 +37,11 @@ import { PalabrasClaveService } from './palabras-clave.service.js';
 /** Un id que no es un número no puede ser un fallo existente: 404, como cualquier otro (RF-33). */
 const FalloIdPipe = new ParseIntPipe({
   exceptionFactory: () => new NotFoundException(JURISPRUDENCIA_MESSAGES.notFound),
+});
+
+/** En la descarga del PDF, un id no numérico responde el 404 único (spec 010, RF-37). */
+const PdfIdPipe = new ParseIntPipe({
+  exceptionFactory: () => new NotFoundException(PDF_MESSAGES.notFound),
 });
 
 /**
@@ -55,23 +68,45 @@ export class JurisprudenciaController {
     return this.palabrasClave.suggest(query.buscar, query.para ?? 'carga');
   }
 
+  /**
+   * El PDF del fallo, como descarga (spec 010, RF-28; plan 010, "Entrega del PDF"). Un id no
+   * numérico responde el mismo 404 que cualquier otro caso (RF-37).
+   */
+  @Get(':id/pdf')
+  async downloadPdf(
+    @Param('id', PdfIdPipe) id: number,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const { contenido, nombre } = await this.jurisprudencia.getPdf(id);
+    return toPdfResponse(response, contenido, nombre);
+  }
+
   @Get(':id')
   findOne(@Param('id', FalloIdPipe) id: number): Promise<FalloDetalle> {
     return this.jurisprudencia.findOne(id);
   }
 
+  /** JSON, o un formulario con `datos` y `pdf` (spec 010, plan 010, D2). */
   @Post()
-  create(@CurrentUser() actor: Usuario, @Body() body: CreateFalloDto): Promise<FalloDetalle> {
-    return this.jurisprudencia.create(actor, body);
+  @UseInterceptors(FormularioConPdfInterceptor)
+  create(
+    @CurrentUser() actor: Usuario,
+    @Body() body: CreateFalloDto,
+    @ArchivoPdf() archivo: ArchivoPdfRecibido | null,
+  ): Promise<FalloDetalle> {
+    return this.jurisprudencia.create(actor, body, archivo);
   }
 
+  /** JSON, o un formulario con `datos` y `pdf` (spec 010, plan 010, D2). */
   @Patch(':id')
+  @UseInterceptors(FormularioConPdfInterceptor)
   update(
     @CurrentUser() actor: Usuario,
     @Param('id', FalloIdPipe) id: number,
     @Body() body: UpdateFalloDto,
+    @ArchivoPdf() archivo: ArchivoPdfRecibido | null,
   ): Promise<FalloDetalle> {
-    return this.jurisprudencia.update(actor, id, body);
+    return this.jurisprudencia.update(actor, id, body, archivo);
   }
 
   @Post(':id/desactivar')

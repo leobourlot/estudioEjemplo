@@ -41,6 +41,8 @@ function fallo(overrides: Partial<Fallo> = {}): Fallo {
     modificadoPorId: 2,
     modificadoPor: user(2, false),
     modificadoEn: new Date('2026-10-02T12:00:00Z'),
+    pdfId: null,
+    pdf: null,
     palabrasClave: [],
     ...overrides,
   };
@@ -61,6 +63,8 @@ describe('toFalloResumen (RF-22)', () => {
         'sumario',
         'palabrasClave',
         'activo',
+        // Spec 010, RF-32.
+        'tienePdf',
       ].sort(),
     );
   });
@@ -99,6 +103,9 @@ describe('toFalloDetalle (RF-19, RF-35)', () => {
         'creadoEn',
         'modificadoPor',
         'modificadoEn',
+        // Spec 010, RF-32.
+        'tienePdf',
+        'pdf',
       ].sort(),
     );
     const json = JSON.stringify(detalle);

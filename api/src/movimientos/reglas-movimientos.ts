@@ -3,6 +3,16 @@
  * services las consultan.
  */
 
+/**
+ * El PDF de un movimiento como lo registra el historial de cambios (spec 010, RF-21): nunca su
+ * contenido. Un reemplazo se ve por el cambio de código.
+ */
+export interface PdfData {
+  codigo: string;
+  tamano: number;
+  visible: boolean;
+}
+
 /** Datos de un movimiento que se registran en el historial de cambios (RF-20). */
 export interface MovementData {
   /** AAAA-MM-DD. */
@@ -12,6 +22,8 @@ export interface MovementData {
   textoCliente: string | null;
   visible: boolean;
   anulado: boolean;
+  /** El PDF, o null si no tiene (spec 010, RF-21). */
+  pdf: PdfData | null;
 }
 
 export const MOVEMENT_FIELDS = [
@@ -21,11 +33,28 @@ export const MOVEMENT_FIELDS = [
   'textoCliente',
   'visible',
   'anulado',
+  'pdf',
 ] as const satisfies readonly (keyof MovementData)[];
 
 export type CampoMovimiento = (typeof MOVEMENT_FIELDS)[number];
 
-export type ValorCampo = string | boolean | null;
+export type ValorCampo = string | boolean | PdfData | null;
+
+/** Solo los datos del PDF que registra el historial, aunque el objeto traiga otros. */
+const pdfData = (pdf: PdfData | null): PdfData | null =>
+  pdf === null ? null : { codigo: pdf.codigo, tamano: pdf.tamano, visible: pdf.visible };
+
+/** El valor de un dato para el historial: el PDF, reducido a sus tres datos. */
+const valueOf = (movimiento: MovementData, campo: CampoMovimiento): ValorCampo =>
+  campo === 'pdf' ? pdfData(movimiento.pdf) : movimiento[campo];
+
+/** Si dos valores son iguales: el PDF se compara por sus tres datos (spec 010, RF-21). */
+function sameValue(a: ValorCampo, b: ValorCampo): boolean {
+  if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+    return a.codigo === b.codigo && a.tamano === b.tamano && a.visible === b.visible;
+  }
+  return a === b;
+}
 
 /** Un dato que cambió: su valor anterior y el nuevo (RF-20). */
 export interface CambioCampo {
@@ -48,16 +77,22 @@ export function visibleText(movimiento: Pick<MovementData, 'descripcion' | 'text
 
 /** Los datos que cambiaron entre dos versiones, en el orden de MOVEMENT_FIELDS (RF-20). */
 export function diffMovement(antes: MovementData, despues: MovementData): CambioCampo[] {
-  return MOVEMENT_FIELDS.filter((campo) => antes[campo] !== despues[campo]).map((campo) => ({
+  return MOVEMENT_FIELDS.filter(
+    (campo) => !sameValue(valueOf(antes, campo), valueOf(despues, campo)),
+  ).map((campo) => ({
     campo,
-    anterior: antes[campo],
-    nuevo: despues[campo],
+    anterior: valueOf(antes, campo),
+    nuevo: valueOf(despues, campo),
   }));
 }
 
 /** Cambios de la carga: todos los datos, con anterior en null (RF-20). */
 export function loadChanges(movimiento: MovementData): CambioCampo[] {
-  return MOVEMENT_FIELDS.map((campo) => ({ campo, anterior: null, nuevo: movimiento[campo] }));
+  return MOVEMENT_FIELDS.map((campo) => ({
+    campo,
+    anterior: null,
+    nuevo: valueOf(movimiento, campo),
+  }));
 }
 
 export const MIN_MOVEMENT_DATE = '1900-01-01';

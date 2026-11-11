@@ -7,8 +7,15 @@ import {
   todayInBuenosAires,
   validateRulingForm,
 } from '../servicios/formulario-fallo';
+import {
+  pdfConfirmation,
+  type PdfFormState,
+  pendingRejectionMessage,
+} from '../servicios/formulario-pdf';
 import { JURISDICTION_OPTIONS } from '../servicios/presentacion-causas';
 import { MAX_SUMARIO_LENGTH } from '../servicios/texto-fallo';
+import { CampoPdf, type PdfGuardadoInfo } from './CampoPdf';
+import { ConfirmacionGuardar } from './ConfirmacionGuardar';
 import { ListaDeErrores } from './ListaDeErrores';
 import { SelectorPalabrasClave } from './SelectorPalabrasClave';
 import { INPUT, LABEL, PRIMARY_BUTTON_SMALL, SECONDARY_BUTTON_SMALL } from './estilos-aplicacion';
@@ -25,6 +32,11 @@ interface FormularioFalloProps {
   enviando?: boolean;
   /** Se llama en cada cambio de un campo, para mantener la sesión mientras se escribe (RF-20). */
   onTyping?: () => void;
+  /** El PDF del formulario (spec 010). Sin él, el formulario no ofrece PDF. */
+  pdf?: PdfFormState;
+  onPdfChange?: (pdf: PdfFormState) => void;
+  /** Los datos del PDF guardado, para mostrarlos. */
+  pdfGuardado?: PdfGuardadoInfo | null;
 }
 
 const fieldClass = INPUT;
@@ -44,8 +56,13 @@ export function FormularioFallo({
   apiProblems = [],
   enviando = false,
   onTyping,
+  pdf,
+  onPdfChange,
+  pdfGuardado = null,
 }: FormularioFalloProps) {
   const [problems, setProblems] = useState<string[]>([]);
+  // La confirmación pendiente de reemplazar o quitar el PDF (spec 010, RF-13).
+  const [confirmando, setConfirmando] = useState<string | null>(null);
   const today = todayInBuenosAires();
 
   const set =
@@ -57,9 +74,21 @@ export function FormularioFallo({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = validateRulingForm(value);
+    // Con un archivo rechazado pendiente, no se envía nada (spec 010, RF-11).
+    const rechazo = pdf ? pendingRejectionMessage(pdf) : null;
+    const found = [...validateRulingForm(value), ...(rechazo ? [rechazo] : [])];
     setProblems(found);
     if (found.length > 0) return;
+    const confirmation = pdf ? pdfConfirmation(pdf) : null;
+    if (confirmation) {
+      setConfirmando(confirmation);
+      return;
+    }
+    await onSubmit();
+  }
+
+  async function confirm() {
+    setConfirmando(null);
     await onSubmit();
   }
 
@@ -188,8 +217,31 @@ export function FormularioFallo({
         />
       </div>
 
+      {/* El PDF de un fallo nunca llega al cliente: sin casilla de visibilidad (RF-27). */}
+      {pdf && onPdfChange && (
+        <CampoPdf estado={pdf} onChange={onPdfChange} conVisibilidad={false} guardado={pdfGuardado} />
+      )}
+
+      {confirmando && (
+        <ConfirmacionGuardar
+          mensaje={confirmando}
+          onConfirm={() => void confirm()}
+          onCancel={() => setConfirmando(null)}
+        />
+      )}
+
+      {enviando && (
+        <p role="status" className="text-sm text-slate-600">
+          Guardando…
+        </p>
+      )}
+
       <div className="flex gap-2">
-        <button type="submit" disabled={enviando} className={PRIMARY_BUTTON_SMALL}>
+        <button
+          type="submit"
+          disabled={enviando || confirmando !== null}
+          className={PRIMARY_BUTTON_SMALL}
+        >
           {submitLabel}
         </button>
         {onCancel && (

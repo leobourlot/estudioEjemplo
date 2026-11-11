@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AparecerAlCargar } from '../componentes/AparecerAlCargar';
+import { AvisoNavegacion } from '../componentes/AvisoNavegacion';
 import { CARD, FOCUS_RING, PAGE, PAGE_TITLE } from '../componentes/estilos-aplicacion';
 import { IconoMenu } from '../componentes/IconosMenu';
 import { useSession } from '../componentes/ProveedorSesion';
@@ -20,6 +21,7 @@ export function PanelInicio() {
   return (
     <main className={PAGE}>
       {usuario && <h1 className={PAGE_TITLE}>{greeting(usuario.nombre)}</h1>}
+      <AvisoNavegacion />
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACCESOS.map((option, index) => (
           <AparecerAlCargar key={option.to} como="li" indice={index}>

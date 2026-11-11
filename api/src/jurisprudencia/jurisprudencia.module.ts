@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PdfsModule } from '../pdfs/pdfs.module.js';
 import { FalloPalabraClave } from './fallo-palabra-clave.entity.js';
 import { Fallo } from './fallo.entity.js';
 import { JurisprudenciaController } from './jurisprudencia.controller.js';
@@ -13,7 +14,8 @@ import { PalabrasClaveService } from './palabras-clave.service.js';
  * (RF-36).
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Fallo, PalabraClave, FalloPalabraClave])],
+  // PdfsService: el PDF de cada fallo (spec 010). PdfsModule no conoce la jurisprudencia.
+  imports: [TypeOrmModule.forFeature([Fallo, PalabraClave, FalloPalabraClave]), PdfsModule],
   controllers: [JurisprudenciaController],
   providers: [JurisprudenciaService, PalabrasClaveService],
 })

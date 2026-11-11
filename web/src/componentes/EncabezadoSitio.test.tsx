@@ -19,7 +19,9 @@ describe('EncabezadoSitio (spec 007, RF-3, RF-4 y RF-6)', () => {
     const home = screen.getByRole('link', { name: MARCA.nombre });
     expect(home.getAttribute('href')).toBe('/');
     expect(home.querySelector('img')!.getAttribute('alt')).toBe('');
-    expect(home.querySelector('img')!.getAttribute('src')).toBe(MARCA.archivos.logoEncabezado.ruta);
+    // El encabezado usa el logo cuadrado desde el commit 4324dc8 (04/11/2026), a pedido del
+    // usuario.
+    expect(home.querySelector('img')!.getAttribute('src')).toBe(MARCA.archivos.logo.ruta);
   });
 
   it('logo, nombre, menú y acceso van en una sola línea, sin partirse', () => {
