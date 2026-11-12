@@ -71,7 +71,7 @@ export function PanelMovimientoDetalle() {
   const [confirmingRestore, setConfirmingRestore] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [pdf, setPdf] = useState(() => initialPdfState(null));
+  const [pdf, setPdf] = useState(() => initialPdfState(false));
   const restoreTitleId = useId();
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function PanelMovimientoDetalle() {
 
   function startEditing(current: MovimientoDetalle) {
     setForm(movementFormFrom(current));
-    setPdf(initialPdfState(current.pdf ? { visible: current.pdf.visible } : null));
+    setPdf(initialPdfState(current.pdf !== null));
     setProblems([]);
     setEditing(true);
   }
@@ -114,7 +114,7 @@ export function PanelMovimientoDetalle() {
     setEnviando(true);
     setProblems([]);
     try {
-      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: true });
+      const { archivo, datos } = pdfChanges(pdf);
       const changes = { ...buildUpdateMovementData(values, current), ...datos };
       setMovimiento(
         await (archivo
@@ -141,7 +141,7 @@ export function PanelMovimientoDetalle() {
     return run(() => movimientos.restoreMovement(causaId, movimientoId));
   };
 
-  /** Con un PDF visible, restaurar pide confirmación (spec 010, RF-19). */
+  /** Un movimiento visible con PDF pide confirmación antes de restaurarlo (spec 010, RF-19). */
   const askRestore = (current: MovimientoDetalle) =>
     needsRestoreConfirmation(current) ? setConfirmingRestore(true) : void restore();
 
@@ -330,8 +330,7 @@ export function PanelMovimientoDetalle() {
                   <p>
                     {formatPdfSize(movimiento.pdf.tamano)}, subido por{' '}
                     {authorName(movimiento.pdf.subidoPor)} el{' '}
-                    {formatDateTime(movimiento.pdf.subidoEn)}.{' '}
-                    {movimiento.pdf.visible ? 'Visible para el cliente.' : 'Oculto para el cliente.'}
+                    {formatDateTime(movimiento.pdf.subidoEn)}.
                   </p>
                   <AccionesPdf
                     verHref={`/panel/causas/${causaId}/movimientos/${movimientoId}/pdf`}

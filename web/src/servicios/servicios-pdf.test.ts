@@ -47,11 +47,11 @@ describe('servicios con PDF', () => {
       const service = createMovimientosService(http);
 
       await service.createMovement(3, { ...DATOS, visible: true });
-      await service.updateMovement(3, 8, { pdfVisible: true });
+      await service.updateMovement(3, 8, { visible: true });
       await service.updateMovement(3, 8, { quitarPdf: true });
 
       expect(http.post).toHaveBeenCalledWith('/panel/causas/3/movimientos', { ...DATOS, visible: true });
-      expect(http.patch).toHaveBeenNthCalledWith(1, '/panel/causas/3/movimientos/8', { pdfVisible: true });
+      expect(http.patch).toHaveBeenNthCalledWith(1, '/panel/causas/3/movimientos/8', { visible: true });
       expect(http.patch).toHaveBeenNthCalledWith(2, '/panel/causas/3/movimientos/8', { quitarPdf: true });
       expect(http.sendForm).not.toHaveBeenCalled();
     });
@@ -60,11 +60,11 @@ describe('servicios con PDF', () => {
       const http = fakeHttp();
       const service = createMovimientosService(http);
 
-      await service.createMovement(3, { ...DATOS, pdfVisible: true }, PDF);
+      await service.createMovement(3, { ...DATOS, visible: true }, PDF);
       await service.updateMovement(3, 8, { descripcion: 'Otro.' }, PDF);
 
       expect(http.sendForm.mock.calls.map(([method, path, form]) => [method, path, contenidoDe(form)])).toEqual([
-        ['POST', '/panel/causas/3/movimientos', { datos: { ...DATOS, pdfVisible: true }, pdf: PDF, partes: ['datos', 'pdf'] }],
+        ['POST', '/panel/causas/3/movimientos', { datos: { ...DATOS, visible: true }, pdf: PDF, partes: ['datos', 'pdf'] }],
         ['PATCH', '/panel/causas/3/movimientos/8', { datos: { descripcion: 'Otro.' }, pdf: PDF, partes: ['datos', 'pdf'] }],
       ]);
       expect(http.post).not.toHaveBeenCalled();

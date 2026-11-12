@@ -48,7 +48,7 @@ const snapshot = (
   textoCliente: movimiento.textoCliente,
   visible: movimiento.visible,
   anulado: movimiento.anulado,
-  pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano, visible: movimiento.pdfVisible },
+  pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano },
 });
 
 const PAGE_SIZE = 20;
@@ -96,8 +96,8 @@ export class MovimientosService {
   /**
    * Carga un movimiento (RF-8): no visible salvo que se lo marque, con su autor y el cambio
    * de carga con todos los valores iniciales (RF-20), en la misma transacción. Con un PDF, el PDF
-   * se guarda en la misma transacción, oculto salvo que se lo marque (spec 010, RF-10, RF-16): si
-   * algo falla, no queda ni el movimiento ni el PDF (RF-11).
+   * se guarda en la misma transacción (spec 010, RF-10, RF-16): si algo falla, no queda ni el
+   * movimiento ni el PDF (RF-11).
    */
   async create(
     actor: Usuario,
@@ -105,15 +105,11 @@ export class MovimientosService {
     dto: CreateMovimientoDto,
     archivo: ArchivoPdfRecibido | null = null,
   ): Promise<MovimientoDetalle> {
-    if (dto.pdfVisible !== undefined && !archivo) {
-      throw new BadRequestException(PDF_MESSAGES.movementWithoutPdf);
-    }
     if (archivo) this.pdfs.assertValid(archivo.contenido);
 
     const id = await this.withActiveCausa(causaId, async (manager) => {
       const ahora = new Date();
       const pdf = archivo ? await this.pdfs.create(manager, archivo.contenido, actor) : null;
-      const pdfVisible = pdf !== null && (dto.pdfVisible ?? false);
       const data: MovementData = {
         fecha: dto.fecha,
         tipo: dto.tipo,
@@ -121,7 +117,7 @@ export class MovimientosService {
         textoCliente: dto.textoCliente ?? null,
         visible: dto.visible ?? false,
         anulado: false,
-        pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano, visible: pdfVisible },
+        pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano },
       };
       const movimiento = await manager.save(
         manager.create(Movimiento, {
@@ -132,7 +128,6 @@ export class MovimientosService {
           visible: data.visible,
           anulado: false,
           pdfId: pdf?.id ?? null,
-          pdfVisible,
           causaId,
           creadoPorId: actor.id,
           creadoEn: ahora,
@@ -155,11 +150,10 @@ export class MovimientosService {
    * la modificación y el cambio con los datos que cambiaron (RF-2, RF-20). Un PATCH que no
    * cambia nada no deja rastro: no es una modificación.
    *
-   * También adjunta, reemplaza o quita su PDF y cambia la visibilidad del PDF (spec 010, plan
-   * 010, "Carga y modificación de un movimiento"), todo en la misma transacción (RF-10). Un PDF
-   * reemplazado o quitado se borra de la base (RF-14); el nuevo nace oculto salvo que se lo marque
-   * (RF-16). Al reemplazar, el anterior se borra antes de guardar el nuevo, así un reemplazo no
-   * suma para el tope de la demo (RF-41).
+   * También adjunta, reemplaza o quita su PDF (spec 010, plan 010, "Carga y modificación de un
+   * movimiento"), todo en la misma transacción (RF-10). Un PDF reemplazado o quitado se borra de
+   * la base (RF-14). Al reemplazar, el anterior se borra antes de guardar el nuevo, así un
+   * reemplazo no suma para el tope de la demo (RF-41).
    */
   async update(
     actor: Usuario,
@@ -183,7 +177,6 @@ export class MovimientosService {
       const antes = snapshot(movimiento, pdfAnterior);
 
       let pdf: Pick<Pdf, 'id' | 'codigo' | 'tamano'> | null = pdfAnterior;
-      let pdfVisible = movimiento.pdfVisible;
       let pdfABorrar: number | null = null;
       if (archivo) {
         if (pdfAnterior) {
@@ -191,17 +184,9 @@ export class MovimientosService {
           await this.pdfs.remove(manager, pdfAnterior.id);
         }
         pdf = await this.pdfs.create(manager, archivo.contenido, actor);
-        pdfVisible = dto.pdfVisible ?? false;
       } else if (dto.quitarPdf) {
-        if (dto.pdfVisible !== undefined) {
-          throw new ConflictException(PDF_MESSAGES.movementWithoutPdf);
-        }
         pdfABorrar = pdfAnterior?.id ?? null;
         pdf = null;
-        pdfVisible = false;
-      } else if (dto.pdfVisible !== undefined) {
-        if (!pdfAnterior) throw new ConflictException(PDF_MESSAGES.movementWithoutPdf);
-        pdfVisible = dto.pdfVisible;
       }
 
       const despues: MovementData = {
@@ -211,7 +196,7 @@ export class MovimientosService {
         descripcion: dto.descripcion ?? antes.descripcion,
         textoCliente: dto.textoCliente === undefined ? antes.textoCliente : dto.textoCliente,
         visible: dto.visible ?? antes.visible,
-        pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano, visible: pdfVisible },
+        pdf: pdf && { codigo: pdf.codigo, tamano: pdf.tamano },
       };
       const cambios = diffMovement(antes, despues);
       if (cambios.length === 0) return;
@@ -224,7 +209,6 @@ export class MovimientosService {
         textoCliente: despues.textoCliente,
         visible: despues.visible,
         pdfId: pdf?.id ?? null,
-        pdfVisible,
         modificadoPorId: actor.id,
         modificadoEn: ahora,
       });

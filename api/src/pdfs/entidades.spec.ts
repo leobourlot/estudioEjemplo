@@ -58,11 +58,8 @@ describe('Columnas nuevas de movimientos y fallos (RF-1, RF-17)', () => {
     });
   });
 
-  it('la visibilidad del PDF de un movimiento nace en falso', () => {
-    expect(columnOptions(Movimiento, 'pdfVisible')).toMatchObject({
-      type: 'boolean',
-      default: false,
-    });
+  it('el PDF de un movimiento no tiene visibilidad propia (RF-17)', () => {
+    expect(columnNames(Movimiento)).not.toContain('pdfVisible');
   });
 
   it('un fallo tiene a lo sumo un PDF, que no comparte', () => {

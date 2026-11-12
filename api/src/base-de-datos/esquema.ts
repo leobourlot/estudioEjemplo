@@ -14,6 +14,7 @@ import { AgregarDniAIntegrantes1793318400000 } from '../migraciones/179331840000
 import { HacerOpcionalElFuero1793404800000 } from '../migraciones/1793404800000-hacer-opcional-el-fuero.js';
 import { CrearBaseDemo1793664000000 } from '../migraciones/1793664000000-crear-base-demo.js';
 import { CrearPdfs1794182400000 } from '../migraciones/1794182400000-crear-pdfs.js';
+import { QuitarVisibilidadDelPdf1794441600000 } from '../migraciones/1794441600000-quitar-visibilidad-del-pdf.js';
 import { Pdf } from '../pdfs/pdf.entity.js';
 import { ModeloEscrito } from '../modelos-escritos/modelo-escrito.entity.js';
 import { CambioMovimiento } from '../movimientos/cambio-movimiento.entity.js';
@@ -51,4 +52,5 @@ export const MIGRATIONS = [
   HacerOpcionalElFuero1793404800000,
   CrearBaseDemo1793664000000,
   CrearPdfs1794182400000,
+  QuitarVisibilidadDelPdf1794441600000,
 ];

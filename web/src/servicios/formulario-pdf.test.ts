@@ -12,66 +12,59 @@ import {
   PDF_CONFIRMATIONS,
   pdfChanges,
   pdfConfirmation,
+  hasPdf,
   removePdf,
-  setPdfVisible,
-  showsVisibilityOption,
 } from './formulario-pdf';
 
 const FILE = new File(['%PDF-1.4'], 'escrito.pdf', { type: 'application/pdf' });
 
-/** Spec 010, T28: el PDF dentro de un formulario (RF-10, RF-13, RF-15, RF-16). */
+/** Spec 010, T28: el PDF dentro de un formulario (RF-10, RF-13, RF-17). */
 describe('el PDF en el formulario', () => {
-  describe('casilla de visibilidad (RF-15, RF-16)', () => {
-    it('no aparece sin PDF', () => {
-      expect(showsVisibilityOption(initialPdfState(null))).toBe(false);
+  describe('si el formulario termina con un PDF', () => {
+    it('sin PDF guardado ni elegido, no', () => {
+      expect(hasPdf(initialPdfState(false))).toBe(false);
     });
 
-    it('aparece con un PDF guardado, con su visibilidad', () => {
-      const state = initialPdfState({ visible: true });
-      expect(showsVisibilityOption(state)).toBe(true);
-      expect(state.visible).toBe(true);
+    it('con un PDF guardado o con un archivo elegido, sí', () => {
+      expect(hasPdf(initialPdfState(true))).toBe(true);
+      expect(hasPdf(choosePdf(initialPdfState(false), FILE))).toBe(true);
     });
 
-    it('aparece con un archivo elegido, desmarcada', () => {
-      const state = choosePdf(initialPdfState(null), FILE);
-      expect(showsVisibilityOption(state)).toBe(true);
-      expect(state.visible).toBe(false);
+    it('al quitarlo, no', () => {
+      expect(hasPdf(removePdf(initialPdfState(true)))).toBe(false);
     });
 
-    it('al elegir un archivo que reemplaza a uno visible, vuelve a desmarcada (RF-16)', () => {
-      expect(choosePdf(initialPdfState({ visible: true }), FILE).visible).toBe(false);
+    it('al descartar el archivo elegido, vuelve al PDF guardado', () => {
+      expect(discardChosenPdf(choosePdf(initialPdfState(true), FILE))).toEqual(initialPdfState(true));
+      expect(hasPdf(discardChosenPdf(choosePdf(initialPdfState(false), FILE)))).toBe(false);
     });
 
-    it('desaparece al quitar el PDF', () => {
-      expect(showsVisibilityOption(removePdf(initialPdfState({ visible: true })))).toBe(false);
-    });
-
-    it('al descartar el archivo elegido, vuelve al PDF guardado y su visibilidad', () => {
-      const state = discardChosenPdf(choosePdf(initialPdfState({ visible: true }), FILE));
-      expect(state).toEqual(initialPdfState({ visible: true }));
-      expect(showsVisibilityOption(discardChosenPdf(choosePdf(initialPdfState(null), FILE)))).toBe(
-        false,
-      );
+    it('no tiene visibilidad propia: la decide la del movimiento (RF-17)', () => {
+      expect(Object.keys(initialPdfState(true)).sort()).toEqual([
+        'archivo',
+        'guardado',
+        'quitar',
+        'rechazo',
+      ]);
     });
   });
 
   describe('confirmaciones (RF-13)', () => {
     it('reemplazar un PDF guardado pide confirmación', () => {
-      expect(pdfConfirmation(choosePdf(initialPdfState({ visible: false }), FILE))).toBe(
+      expect(pdfConfirmation(choosePdf(initialPdfState(true), FILE))).toBe(
         'El PDF actual se borrará definitivamente y será reemplazado por el nuevo. No se puede deshacer',
       );
     });
 
     it('quitarlo pide confirmación', () => {
-      expect(pdfConfirmation(removePdf(initialPdfState({ visible: false })))).toBe(
+      expect(pdfConfirmation(removePdf(initialPdfState(true)))).toBe(
         'El PDF se borrará definitivamente. No se puede deshacer',
       );
     });
 
-    it('adjuntar el primero o cambiar la visibilidad no piden confirmación', () => {
-      expect(pdfConfirmation(choosePdf(initialPdfState(null), FILE))).toBeNull();
-      expect(pdfConfirmation(setPdfVisible(initialPdfState({ visible: false }), true))).toBeNull();
-      expect(pdfConfirmation(initialPdfState({ visible: false }))).toBeNull();
+    it('adjuntar el primero o no cambiar el PDF no piden confirmación', () => {
+      expect(pdfConfirmation(choosePdf(initialPdfState(false), FILE))).toBeNull();
+      expect(pdfConfirmation(initialPdfState(true))).toBeNull();
     });
 
     it('tiene los textos de la spec', () => {
@@ -82,28 +75,28 @@ describe('el PDF en el formulario', () => {
 
   describe('archivo rechazado pendiente (RF-11)', () => {
     it('rejectPdf vuelve al PDF guardado y deja el rechazo pendiente, con su mensaje', () => {
-      const state = rejectPdf(choosePdf(initialPdfState({ visible: true }), FILE), 'El archivo debe ser un PDF');
+      const state = rejectPdf(choosePdf(initialPdfState(true), FILE), 'El archivo debe ser un PDF');
       expect(state.archivo).toBeNull();
-      expect(state.visible).toBe(true);
+      expect(state.guardado).toBe(true);
       expect(pendingRejectionMessage(state)).toBe(
         'El PDF elegido no se adjuntó: El archivo debe ser un PDF. Elegí otro archivo o descartalo',
       );
     });
 
     it('descartar, elegir otro archivo o quitar el PDF dejan de tener el rechazo pendiente', () => {
-      const rechazado = rejectPdf(initialPdfState(null), 'El archivo está vacío');
+      const rechazado = rejectPdf(initialPdfState(false), 'El archivo está vacío');
       expect(pendingRejectionMessage(dismissRejection(rechazado))).toBeNull();
       expect(pendingRejectionMessage(choosePdf(rechazado, FILE))).toBeNull();
       expect(pendingRejectionMessage(removePdf(rechazado))).toBeNull();
     });
 
     it('sin rechazo, no hay mensaje', () => {
-      expect(pendingRejectionMessage(initialPdfState(null))).toBeNull();
+      expect(pendingRejectionMessage(initialPdfState(false))).toBeNull();
     });
   });
 
   describe('después de un error al guardar (RF-11, RF-12)', () => {
-    const conArchivo = choosePdf(initialPdfState(null), FILE);
+    const conArchivo = choosePdf(initialPdfState(false), FILE);
 
     it('un error de red con un archivo dice "No se pudo guardar. Probá de nuevo" y conserva todo', () => {
       expect(afterSaveError(new ApiError(0, ['Sin conexión']), conArchivo)).toEqual({
@@ -114,7 +107,7 @@ describe('el PDF en el formulario', () => {
     });
 
     it('un error de red sin archivo muestra el mensaje de siempre', () => {
-      expect(afterSaveError(new ApiError(0, ['Sin conexión']), initialPdfState(null)).problems).toEqual([
+      expect(afterSaveError(new ApiError(0, ['Sin conexión']), initialPdfState(false)).problems).toEqual([
         'Sin conexión',
       ]);
     });
@@ -140,57 +133,34 @@ describe('el PDF en el formulario', () => {
   });
 
   describe('lo que se envía (RF-10)', () => {
-    it('adjuntar: el archivo y su visibilidad', () => {
-      const state = setPdfVisible(choosePdf(initialPdfState(null), FILE), true);
-      expect(pdfChanges(state, { conVisibilidad: true })).toEqual({
+    it('adjuntar: solo el archivo, sin visibilidad del PDF (RF-17)', () => {
+      expect(pdfChanges(choosePdf(initialPdfState(false), FILE))).toEqual({
         archivo: FILE,
-        datos: { pdfVisible: true },
+        datos: {},
       });
     });
 
-    it('reemplazar: el archivo, con la visibilidad en false si no se marcó', () => {
-      const state = choosePdf(initialPdfState({ visible: true }), FILE);
-      expect(pdfChanges(state, { conVisibilidad: true })).toEqual({
+    it('reemplazar: solo el archivo', () => {
+      expect(pdfChanges(choosePdf(initialPdfState(true), FILE))).toEqual({
         archivo: FILE,
-        datos: { pdfVisible: false },
+        datos: {},
       });
     });
 
     it('quitar: quitarPdf, sin archivo', () => {
-      expect(pdfChanges(removePdf(initialPdfState({ visible: true })), { conVisibilidad: true })).toEqual({
+      expect(pdfChanges(removePdf(initialPdfState(true)))).toEqual({
         archivo: undefined,
         datos: { quitarPdf: true },
       });
     });
 
-    it('cambiar la visibilidad del guardado: solo pdfVisible', () => {
-      const state = setPdfVisible(initialPdfState({ visible: false }), true);
-      expect(pdfChanges(state, { conVisibilidad: true })).toEqual({
-        archivo: undefined,
-        datos: { pdfVisible: true },
-      });
-    });
-
     it('sin cambios del PDF, nada', () => {
-      expect(pdfChanges(initialPdfState({ visible: true }), { conVisibilidad: true })).toEqual({
-        archivo: undefined,
-        datos: {},
-      });
-      expect(pdfChanges(initialPdfState(null), { conVisibilidad: true })).toEqual({
-        archivo: undefined,
-        datos: {},
-      });
-    });
-
-    it('en un fallo nunca se envía la visibilidad (RF-27)', () => {
-      expect(pdfChanges(choosePdf(initialPdfState(null), FILE), { conVisibilidad: false })).toEqual({
-        archivo: FILE,
-        datos: {},
-      });
+      expect(pdfChanges(initialPdfState(true))).toEqual({ archivo: undefined, datos: {} });
+      expect(pdfChanges(initialPdfState(false))).toEqual({ archivo: undefined, datos: {} });
     });
 
     it('quitar un PDF que no estaba guardado no envía nada', () => {
-      expect(pdfChanges(removePdf(initialPdfState(null)), { conVisibilidad: true })).toEqual({
+      expect(pdfChanges(removePdf(initialPdfState(false)))).toEqual({
         archivo: undefined,
         datos: {},
       });

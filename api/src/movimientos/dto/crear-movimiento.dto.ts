@@ -6,7 +6,6 @@ import {
   fechaRule,
   MOVIMIENTO_MESSAGES,
   movementText,
-  pdfVisibleRule,
   TEXTO_CLIENTE_LABEL,
   tipoRule,
   toMovementText,
@@ -33,11 +32,7 @@ export class CreateMovimientoDto {
   @Rule(movementText(TEXTO_CLIENTE_LABEL))
   textoCliente?: string | null;
 
+  // También decide si el cliente ve el PDF: el PDF no tiene visibilidad propia (spec 010, RF-17).
   @Rule(optional(visibleRule))
   visible?: boolean;
-
-  // Visibilidad del PDF que viene en el mismo formulario; sin ella, nace oculto (spec 010, RF-16).
-  // Sin un PDF, el service lo rechaza (RF-15).
-  @Rule(optional(pdfVisibleRule))
-  pdfVisible?: boolean;
 }

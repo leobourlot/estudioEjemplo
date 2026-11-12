@@ -49,9 +49,8 @@ describe('PDF de los movimientos: carga y modificación', () => {
       .find({ where: { movimientoId }, order: { id: 'ASC' } });
 
   /** Carga un movimiento, con PDF o sin él, y devuelve su id. */
-  async function createMovement(conPdf: Buffer | null = null, pdfVisible?: boolean) {
-    const datos = pdfVisible === undefined ? MINIMAL : { ...MINIMAL, pdfVisible };
-    const response = conPdf ? await withPdf(post(), datos, conPdf) : await post().send(datos);
+  async function createMovement(conPdf: Buffer | null = null) {
+    const response = conPdf ? await withPdf(post(), MINIMAL, conPdf) : await post().send(MINIMAL);
     expect(response.status).toBe(201);
     return response.body.id as number;
   }
@@ -75,29 +74,23 @@ describe('PDF de los movimientos: carga y modificación', () => {
   });
 
   describe('carga (T13, RF-10, RF-11, RF-16, RF-20)', () => {
-    it('un movimiento con PDF nace con el PDF oculto, guardado sin cambios', async () => {
+    it('un movimiento con PDF lo guarda sin cambios', async () => {
       const id = await createMovement(signedPdf());
 
       const guardado = await movement(id);
       expect(guardado.pdfId).not.toBeNull();
-      expect(guardado.pdfVisible).toBe(false);
       const contenido = await app.get(PdfsService).findContent(guardado.pdfId!);
       expect(Buffer.compare(contenido!.contenido, signedPdf())).toBe(0);
       expect(contenido!.subidoPorId).toBe(lawyer.id);
     });
 
-    it('con pdfVisible: true, el PDF nace visible', async () => {
-      const id = await createMovement(minimalPdf(), true);
-
-      expect((await movement(id)).pdfVisible).toBe(true);
-    });
-
-    it('pdfVisible sin archivo responde 400 "El movimiento no tiene PDF"', async () => {
-      const response = await post().send({ ...MINIMAL, pdfVisible: true });
+    it('pdfVisible responde 400: el PDF no tiene visibilidad propia (RF-17)', async () => {
+      const response = await withPdf(post(), { ...MINIMAL, pdfVisible: true });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('El movimiento no tiene PDF');
+      expect(response.body.message).toEqual(['El campo pdfVisible no está permitido']);
       expect(await movementCount()).toBe(0);
+      expect(await pdfCount()).toBe(0);
     });
 
     it.each([
@@ -120,23 +113,23 @@ describe('PDF de los movimientos: carga y modificación', () => {
       expect(await pdfCount()).toBe(0);
     });
 
-    it('el cambio de carga registra el PDF con su código, tamaño y visibilidad (RF-21)', async () => {
+    it('el cambio de carga registra el PDF con su código y su tamaño (RF-21)', async () => {
       const pdf = minimalPdf();
-      const id = await createMovement(pdf, true);
+      const id = await createMovement(pdf);
       const { codigo } = await pdfOf((await movement(id)).pdfId!);
 
       const [carga] = await changes(id);
       expect(carga.cambios.at(-1)).toEqual({
         campo: 'pdf',
         anterior: null,
-        nuevo: { codigo, tamano: pdf.length, visible: true },
+        nuevo: { codigo, tamano: pdf.length },
       });
     });
 
     it('una carga JSON sin PDF sigue igual que siempre', async () => {
       const id = await createMovement();
 
-      expect(await movement(id)).toMatchObject({ pdfId: null, pdfVisible: false });
+      expect(await movement(id)).toMatchObject({ pdfId: null });
       const [carga] = await changes(id);
       expect(carga.cambios.at(-1)).toEqual({ campo: 'pdf', anterior: null, nuevo: null });
     });
@@ -148,8 +141,8 @@ describe('PDF de los movimientos: carga y modificación', () => {
     const download = (id: number | string, causa: number | string = causaId) =>
       get(`/api/panel/causas/${causa}/movimientos/${id}/pdf`);
 
-    it('el historial dice si cada movimiento tiene PDF y si es visible (RF-30)', async () => {
-      const conPdf = await createMovement(minimalPdf(), true);
+    it('el historial dice si cada movimiento tiene PDF (RF-30)', async () => {
+      const conPdf = await createMovement(minimalPdf());
       const sinPdf = await createMovement();
 
       const response = await request(app.getHttpServer())
@@ -158,10 +151,13 @@ describe('PDF de los movimientos: carga y modificación', () => {
         .expect(200);
 
       const porId = new Map(
-        (response.body.items as { id: number; pdf: unknown }[]).map((item) => [item.id, item.pdf]),
+        (response.body.items as { id: number; tienePdf: unknown }[]).map((item) => [
+          item.id,
+          item.tienePdf,
+        ]),
       );
-      expect(porId.get(conPdf)).toEqual({ visible: true });
-      expect(porId.get(sinPdf)).toBeNull();
+      expect(porId.get(conPdf)).toBe(true);
+      expect(porId.get(sinPdf)).toBe(false);
     });
 
     it('el detalle trae el PDF con su autor, marcado si está desactivado (RF-31, RF-40)', async () => {
@@ -187,7 +183,6 @@ describe('PDF de los movimientos: carga y modificación', () => {
       expect(response.body.pdf).toEqual({
         codigo,
         tamano: pdf.length,
-        visible: false,
         subidoPor: { id: otro.id, nombre: 'Ana', apellido: 'Paz', activo: false },
         subidoEn: expect.any(String),
       });
@@ -272,15 +267,14 @@ describe('PDF de los movimientos: carga y modificación', () => {
         .post(`${movementsOf()}/${id}/restaurar`)
         .set('Cookie', cookie());
 
-    it('en un movimiento anulado no se puede adjuntar, reemplazar, quitar ni cambiar la visibilidad', async () => {
-      const id = await createMovement(minimalPdf(), true);
+    it('en un movimiento anulado no se puede adjuntar, reemplazar ni quitar el PDF', async () => {
+      const id = await createMovement(minimalPdf());
       await annul(id).expect(200);
 
       // Funciones y no pedidos: supertest levanta el servidor al crear cada pedido.
       for (const intento of [
         () => withPdf(patch(id), {}),
         () => patch(id).send({ quitarPdf: true }),
-        () => patch(id).send({ pdfVisible: false }),
       ]) {
         const response = await intento();
         expect(response.status).toBe(409);
@@ -289,23 +283,23 @@ describe('PDF de los movimientos: carga y modificación', () => {
       expect(await pdfCount()).toBe(1);
     });
 
-    it('al restaurarlo, el PDF conserva su visibilidad', async () => {
-      const id = await createMovement(minimalPdf(), true);
+    it('al restaurarlo, conserva el PDF', async () => {
+      const id = await createMovement(minimalPdf());
+      const { pdfId } = await movement(id);
       await annul(id).expect(200);
 
       await restore(id).expect(200);
 
-      expect((await movement(id)).pdfVisible).toBe(true);
+      expect((await movement(id)).pdfId).toBe(pdfId);
     });
 
     it('en una causa desactivada responde 409 "La causa está desactivada"', async () => {
-      const id = await createMovement(minimalPdf(), true);
+      const id = await createMovement(minimalPdf());
       await dataSource.getRepository(Causa).update(causaId, { activa: false });
       try {
         for (const intento of [
           () => withPdf(patch(id), {}),
           () => patch(id).send({ quitarPdf: true }),
-          () => patch(id).send({ pdfVisible: false }),
           () => withPdf(post(), MINIMAL),
         ]) {
           const response = await intento();
@@ -351,58 +345,39 @@ describe('PDF de los movimientos: carga y modificación', () => {
 
       const guardado = await movement(id);
       expect(guardado.pdfId).not.toBeNull();
-      expect(guardado.pdfVisible).toBe(false);
       expect(guardado.modificadoPorId).toBe(lawyer.id);
     });
 
-    it('reemplazar uno visible: el nuevo nace oculto y el anterior se borra (RF-14, RF-16)', async () => {
-      const id = await createMovement(minimalPdf('Primero'), true);
+    it('reemplazar: el anterior se borra y el nuevo tiene otro código (RF-14)', async () => {
+      const id = await createMovement(minimalPdf('Primero'));
       const anterior = await pdfOf((await movement(id)).pdfId!);
 
       await withPdf(patch(id), {}, minimalPdf('Segundo')).expect(200);
 
       const guardado = await movement(id);
-      expect(guardado.pdfVisible).toBe(false);
       expect(guardado.pdfId).not.toBe(anterior.id);
       expect(await dataSource.getRepository(Pdf).countBy({ id: anterior.id })).toBe(0);
       expect((await pdfOf(guardado.pdfId!)).codigo).not.toBe(anterior.codigo);
       expect(await pdfCount()).toBe(1);
     });
 
-    it('reemplazar con pdfVisible: true deja visible el nuevo', async () => {
+    it('quitar borra el PDF', async () => {
       const id = await createMovement(minimalPdf());
-
-      await withPdf(patch(id), { pdfVisible: true }).expect(200);
-
-      expect((await movement(id)).pdfVisible).toBe(true);
-    });
-
-    it('quitar borra el PDF y deja pdfVisible en false', async () => {
-      const id = await createMovement(minimalPdf(), true);
 
       await patch(id).send({ quitarPdf: true }).expect(200);
 
-      expect(await movement(id)).toMatchObject({ pdfId: null, pdfVisible: false });
+      expect(await movement(id)).toMatchObject({ pdfId: null });
       expect(await pdfCount()).toBe(0);
     });
 
-    it('cambia la visibilidad del PDF en los dos sentidos, con JSON', async () => {
+    it('pdfVisible responde 400 y no cambia nada: el PDF no tiene visibilidad propia (RF-17)', async () => {
       const id = await createMovement(minimalPdf());
-
-      await patch(id).send({ pdfVisible: true }).expect(200);
-      expect((await movement(id)).pdfVisible).toBe(true);
-
-      await patch(id).send({ pdfVisible: false }).expect(200);
-      expect((await movement(id)).pdfVisible).toBe(false);
-    });
-
-    it('pdfVisible sin PDF responde 409 "El movimiento no tiene PDF" (RF-15)', async () => {
-      const id = await createMovement();
 
       const response = await patch(id).send({ pdfVisible: true });
 
-      expect(response.status).toBe(409);
-      expect(response.body.message).toBe('El movimiento no tiene PDF');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual(['El campo pdfVisible no está permitido']);
+      expect(await changes(id)).toHaveLength(1);
     });
 
     it('un archivo junto con quitarPdf responde 400', async () => {
@@ -428,7 +403,6 @@ describe('PDF de los movimientos: carga y modificación', () => {
       const id = await createMovement();
 
       await withPdf(patch(id), {}).expect(200);
-      await patch(id).send({ pdfVisible: true }).expect(200);
       await withPdf(patch(id), {}, minimalPdf('Otro')).expect(200);
       await patch(id).send({ quitarPdf: true }).expect(200);
 
@@ -438,14 +412,13 @@ describe('PDF de los movimientos: carga y modificación', () => {
         'modificacion',
         'modificacion',
         'modificacion',
-        'modificacion',
       ]);
       for (const cambio of registro.slice(1)) {
         expect(cambio.cambios).toHaveLength(1);
         expect(cambio.cambios[0].campo).toBe('pdf');
         expect(cambio.usuarioId).toBe(lawyer.id);
         for (const valor of [cambio.cambios[0].anterior, cambio.cambios[0].nuevo]) {
-          if (valor !== null) expect(Object.keys(valor).sort()).toEqual(['codigo', 'tamano', 'visible']);
+          if (valor !== null) expect(Object.keys(valor).sort()).toEqual(['codigo', 'tamano']);
         }
       }
       expect(registro.at(-1)!.cambios[0].nuevo).toBeNull();

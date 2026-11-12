@@ -41,7 +41,6 @@ function movement(overrides: Partial<Movimiento> = {}): Movimiento {
     modificadoEn: null,
     pdfId: null,
     pdf: null,
-    pdfVisible: false,
     cambios: [],
     ...overrides,
   } as Movimiento;
@@ -49,20 +48,17 @@ function movement(overrides: Partial<Movimiento> = {}): Movimiento {
 
 /** Spec 010, RF-30, RF-31 y RF-40: el PDF en las respuestas del panel. */
 describe('Respuestas del panel con el PDF', () => {
-  it('el resumen dice si hay PDF y si es visible, sin más datos (RF-30)', () => {
-    expect(toMovimientoResumen(movement()).pdf).toBeNull();
-    expect(toMovimientoResumen(movement({ pdfId: 40, pdfVisible: true })).pdf).toEqual({
-      visible: true,
-    });
+  it('el resumen dice si hay PDF, sin más datos (RF-30)', () => {
+    expect(toMovimientoResumen(movement()).tienePdf).toBe(false);
+    expect(toMovimientoResumen(movement({ pdfId: 40 })).tienePdf).toBe(true);
   });
 
-  it('el detalle trae tamaño, código, visibilidad, quién lo subió y cuándo (RF-31, RF-40)', () => {
-    const detalle = toMovimientoDetalle(movement({ pdfId: 40, pdf: PDF, pdfVisible: false }), true);
+  it('el detalle trae tamaño, código, quién lo subió y cuándo, sin visibilidad propia (RF-31, RF-40)', () => {
+    const detalle = toMovimientoDetalle(movement({ pdfId: 40, pdf: PDF }), true);
 
     expect(detalle.pdf).toEqual({
       codigo: 'K7Q2MX',
       tamano: 850_000,
-      visible: false,
       subidoPor: { id: 3, nombre: 'Nombre3', apellido: 'Apellido3', activo: false },
       subidoEn: PDF.subidoEn,
     });

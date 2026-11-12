@@ -90,9 +90,9 @@ export class ClientVisibilityService {
 
   /**
    * El PDF de un movimiento que el cliente puede ver (spec 010, RF-33): el movimiento es visible,
-   * no está anulado, pertenece a la causa indicada, el cliente está vinculado a ella y el PDF está
-   * marcado como visible. Si falla cualquiera de esas condiciones, o el movimiento no tiene PDF,
-   * devuelve null: el portal responde siempre el mismo 404 (RF-37).
+   * no está anulado, pertenece a la causa indicada y el cliente está vinculado a ella. El PDF no
+   * tiene visibilidad propia (RF-17). Si falla cualquiera de esas condiciones, o el movimiento no
+   * tiene PDF, devuelve null: el portal responde siempre el mismo 404 (RF-37).
    */
   async findVisiblePdf(
     clienteId: number,
@@ -101,7 +101,7 @@ export class ClientVisibilityService {
   ): Promise<{ contenido: Buffer; nombre: string } | null> {
     const movimiento = await this.movimientos.findOne({
       select: { id: true, fecha: true, tipo: true, pdfId: true },
-      where: { id: movimientoId, causaId, visible: true, anulado: false, pdfVisible: true },
+      where: { id: movimientoId, causaId, visible: true, anulado: false },
     });
     if (!movimiento?.pdfId || !(await this.canSeeCausa(clienteId, causaId))) return null;
     const pdf = await this.pdfs.findContent(movimiento.pdfId);

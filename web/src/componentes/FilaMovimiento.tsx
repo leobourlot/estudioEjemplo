@@ -49,11 +49,9 @@ export function FilaMovimiento({
             Con texto para el cliente
           </span>
         )}
-        {/* Spec 010, RF-30: si tiene PDF y si el cliente puede verlo. */}
-        {movimiento.pdf && (
-          <span className={`${badgeClass} bg-slate-100 text-slate-700`}>
-            PDF {movimiento.pdf.visible ? 'visible para el cliente' : 'oculto para el cliente'}
-          </span>
+        {/* Spec 010, RF-30: si tiene PDF. El cliente lo ve si ve el movimiento (RF-33). */}
+        {movimiento.tienePdf && (
+          <span className={`${badgeClass} bg-slate-100 text-slate-700`}>PDF</span>
         )}
         {movimiento.anulado && (
           <span className={`${badgeClass} bg-red-100 text-red-800`}>Anulado</span>

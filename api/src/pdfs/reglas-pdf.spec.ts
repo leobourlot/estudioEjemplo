@@ -56,7 +56,6 @@ describe('validatePdfContent (RF-3, RF-4)', () => {
     expect(PDF_MESSAGES.tooLarge).toBe('El archivo no puede superar los 5 MB');
     expect(PDF_MESSAGES.onlyOne).toBe('Podés adjuntar un solo PDF');
     expect(PDF_MESSAGES.notFound).toBe('No existe ese PDF');
-    expect(PDF_MESSAGES.movementWithoutPdf).toBe('El movimiento no tiene PDF');
     expect(PDF_MESSAGES.demoLimit).toBe(
       'En la demo se pueden tener hasta 4 PDF. Quitá uno para subir otro',
     );

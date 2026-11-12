@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diffMovement, loadChanges, type MovementData } from './reglas-movimientos.js';
 
-const PDF = { codigo: 'K7Q2MX', tamano: 850_000, visible: false };
+const PDF = { codigo: 'K7Q2MX', tamano: 850_000 };
 
 const MOVEMENT: MovementData = {
   fecha: '2024-03-01',
@@ -27,14 +27,7 @@ describe('Historial de cambios con el PDF', () => {
     ]);
   });
 
-  it('registra el cambio de visibilidad del PDF', () => {
-    const visible = { ...PDF, visible: true };
-    expect(diffMovement({ ...MOVEMENT, pdf: PDF }, { ...MOVEMENT, pdf: visible })).toEqual([
-      { campo: 'pdf', anterior: PDF, nuevo: visible },
-    ]);
-  });
-
-  it('un reemplazo con el mismo tamaño y la misma visibilidad se registra por el código', () => {
+  it('un reemplazo con el mismo tamaño se registra por el código', () => {
     const otro = { ...PDF, codigo: 'P4N8RC' };
     expect(diffMovement({ ...MOVEMENT, pdf: PDF }, { ...MOVEMENT, pdf: otro })).toEqual([
       { campo: 'pdf', anterior: PDF, nuevo: otro },
@@ -60,11 +53,11 @@ describe('Historial de cambios con el PDF', () => {
     expect(loadChanges(MOVEMENT).at(-1)).toEqual({ campo: 'pdf', anterior: null, nuevo: null });
   });
 
-  it('nunca registra el contenido: solo código, tamaño y visibilidad', () => {
+  it('nunca registra el contenido ni una visibilidad propia: solo código y tamaño', () => {
     const [cambio] = diffMovement(MOVEMENT, {
       ...MOVEMENT,
-      pdf: { ...PDF, contenido: Buffer.from('%PDF-') } as MovementData['pdf'],
+      pdf: { ...PDF, visible: true, contenido: Buffer.from('%PDF-') } as MovementData['pdf'],
     });
-    expect(Object.keys(cambio.nuevo as object).sort()).toEqual(['codigo', 'tamano', 'visible']);
+    expect(Object.keys(cambio.nuevo as object).sort()).toEqual(['codigo', 'tamano']);
   });
 });

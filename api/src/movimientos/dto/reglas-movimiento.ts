@@ -21,7 +21,6 @@ export const MOVIMIENTO_MESSAGES = {
   tipo: 'El tipo debe ser escrito presentado, providencia, resolución, sentencia, notificación, audiencia, pericia, oficio u otro',
   descripcionRequired: 'Indicá la descripción del movimiento',
   visible: 'La visibilidad debe ser sí o no',
-  pdfVisible: 'La visibilidad del PDF debe ser sí o no',
 } as const;
 
 export const DESCRIPCION_LABEL = 'La descripción';
@@ -71,7 +70,3 @@ export const movementText =
 
 export const visibleRule: RuleFn = (value) =>
   typeof value === 'boolean' ? null : MOVIMIENTO_MESSAGES.visible;
-
-/** Visibilidad del PDF para el cliente (spec 010, RF-16, RF-17). */
-export const pdfVisibleRule: RuleFn = (value) =>
-  typeof value === 'boolean' ? null : MOVIMIENTO_MESSAGES.pdfVisible;

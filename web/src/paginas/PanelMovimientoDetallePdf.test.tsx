@@ -15,7 +15,6 @@ import { PanelMovimientoDetalle } from './PanelMovimientoDetalle';
 const PDF: PdfDetalle = {
   codigo: 'K7Q2MX',
   tamano: 850_000,
-  visible: true,
   subidoPor: { id: 2, nombre: 'Ana', apellido: 'Paz', activo: false },
   subidoEn: '2026-10-01T15:00:00.000Z',
 };
@@ -50,12 +49,12 @@ const pdfFile = () => new File(['%PDF-1.4'], 'nuevo.pdf', { type: 'application/p
 /** Spec 010, T33 y T34 (RF-11 a RF-13, RF-19, RF-31). */
 describe('PanelMovimientoDetalle con PDF', () => {
   describe('sección del PDF (RF-31)', () => {
-    it('muestra tamaño, autor marcado si está desactivado, fecha, visibilidad y las acciones', async () => {
+    it('muestra tamaño, autor marcado si está desactivado, fecha y las acciones, sin visibilidad propia', async () => {
       await openDetail(detail({ pdf: PDF }));
 
       const datos = within(screen.getByRole('region', { name: 'Datos del movimiento' }));
       datos.getByText(/830 KB, subido por Paz, Ana \(desactivado\)/);
-      datos.getByText(/Visible para el cliente\./);
+      expect(datos.queryByText(/(Visible|Oculto) para el cliente\./)).toBeNull();
       datos.getByRole('link', { name: 'Ver el PDF del movimiento del 24/10/2024 (se abre en una pestaña nueva)' });
       datos.getByRole('button', { name: 'Descargar el PDF del movimiento del 24/10/2024' });
     });
@@ -68,7 +67,7 @@ describe('PanelMovimientoDetalle con PDF', () => {
   });
 
   describe('restaurar (RF-19)', () => {
-    it('un movimiento visible con PDF visible pide confirmación antes de restaurar', async () => {
+    it('un movimiento visible con PDF pide confirmación antes de restaurar', async () => {
       const restoreMovement = vi.fn().mockResolvedValue(detail({ pdf: PDF }));
       const { user } = await openDetail(detail({ anulado: true, pdf: PDF }), { restoreMovement });
 
@@ -94,7 +93,6 @@ describe('PanelMovimientoDetalle con PDF', () => {
     });
 
     it.each([
-      ['el PDF oculto', detail({ anulado: true, pdf: { ...PDF, visible: false } })],
       ['el movimiento oculto', detail({ anulado: true, visible: false, pdf: PDF })],
       ['sin PDF', detail({ anulado: true })],
     ])('con %s restaura sin preguntar', async (_caso, movimiento) => {
@@ -120,7 +118,7 @@ describe('PanelMovimientoDetalle con PDF', () => {
 
       expect(updateMovement).toHaveBeenCalledTimes(1);
       const [causa, movimiento, cambios, archivo] = updateMovement.mock.calls[0];
-      expect([causa, movimiento, cambios]).toEqual([7, 12, { pdfVisible: false }]);
+      expect([causa, movimiento, cambios]).toEqual([7, 12, {}]);
       expect(archivo).toBeInstanceOf(File);
     });
 

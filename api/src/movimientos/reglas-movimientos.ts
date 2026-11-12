@@ -5,12 +5,12 @@
 
 /**
  * El PDF de un movimiento como lo registra el historial de cambios (spec 010, RF-21): nunca su
- * contenido. Un reemplazo se ve por el cambio de código.
+ * contenido. Un reemplazo se registra por el cambio de código. Los cambios registrados antes de
+ * que el PDF dejara de tener visibilidad propia pueden traer además `visible`, que ya no se usa.
  */
 export interface PdfData {
   codigo: string;
   tamano: number;
-  visible: boolean;
 }
 
 /** Datos de un movimiento que se registran en el historial de cambios (RF-20). */
@@ -42,16 +42,16 @@ export type ValorCampo = string | boolean | PdfData | null;
 
 /** Solo los datos del PDF que registra el historial, aunque el objeto traiga otros. */
 const pdfData = (pdf: PdfData | null): PdfData | null =>
-  pdf === null ? null : { codigo: pdf.codigo, tamano: pdf.tamano, visible: pdf.visible };
+  pdf === null ? null : { codigo: pdf.codigo, tamano: pdf.tamano };
 
-/** El valor de un dato para el historial: el PDF, reducido a sus tres datos. */
+/** El valor de un dato para el historial: el PDF, reducido a sus dos datos. */
 const valueOf = (movimiento: MovementData, campo: CampoMovimiento): ValorCampo =>
   campo === 'pdf' ? pdfData(movimiento.pdf) : movimiento[campo];
 
-/** Si dos valores son iguales: el PDF se compara por sus tres datos (spec 010, RF-21). */
+/** Si dos valores son iguales: el PDF se compara por sus dos datos (spec 010, RF-21). */
 function sameValue(a: ValorCampo, b: ValorCampo): boolean {
   if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
-    return a.codigo === b.codigo && a.tamano === b.tamano && a.visible === b.visible;
+    return a.codigo === b.codigo && a.tamano === b.tamano;
   }
   return a === b;
 }

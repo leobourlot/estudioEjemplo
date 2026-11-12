@@ -11,7 +11,6 @@ import { FormularioMovimiento } from './FormularioMovimiento';
 const PDF_GUARDADO = {
   codigo: 'K7Q2MX',
   tamano: 850_000,
-  visible: false,
   subidoPor: { id: 1, nombre: 'Luis', apellido: 'Sosa', activo: true },
   subidoEn: '2026-10-01T15:00:00.000Z',
 };
@@ -26,9 +25,7 @@ function Editar({
   enviando?: boolean;
 }) {
   const [form, setForm] = useState(movementFormFrom(original));
-  const [pdf, setPdf] = useState(
-    initialPdfState(original.pdf ? { visible: original.pdf.visible } : null),
-  );
+  const [pdf, setPdf] = useState(initialPdfState(original.pdf !== null));
   return (
     <FormularioMovimiento
       value={form}
@@ -124,33 +121,36 @@ describe('FormularioMovimiento con PDF', () => {
     expect(onSubmit.mock.calls[0][0].archivo).not.toBeNull();
   });
 
-  describe('avisos (RF-18)', () => {
-    it('marcar visible el PDF de un movimiento visible', async () => {
-      const user = userEvent.setup();
+  describe('avisos (RF-17, RF-18)', () => {
+    it('no hay casilla de visibilidad del PDF: solo la del movimiento', () => {
       render(<Editar original={testMovimientoDetalle({ visible: true, pdf: PDF_GUARDADO })} onSubmit={vi.fn()} />);
 
-      await user.click(screen.getByRole('checkbox', { name: 'PDF visible para el cliente' }));
-
-      screen.getByText(PDF_NOTICES.pdfVisible);
+      expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+      screen.getByRole('checkbox', { name: 'Visible para el cliente' });
     });
 
-    it('marcar visible el PDF de un movimiento oculto', async () => {
+    it('adjuntar un PDF a un movimiento visible avisa que el cliente lo podrá ver', async () => {
+      const user = userEvent.setup();
+      render(<Editar original={testMovimientoDetalle({ visible: true })} onSubmit={vi.fn()} />);
+
+      await user.upload(fileInput(), pdfFile());
+
+      await waitFor(() => screen.getByText(PDF_NOTICES.newPdf));
+    });
+
+    it('adjuntar un PDF a un movimiento oculto no avisa nada', async () => {
+      const user = userEvent.setup();
+      render(<Editar original={testMovimientoDetalle({ visible: false })} onSubmit={vi.fn()} />);
+
+      await user.upload(fileInput(), pdfFile());
+
+      await waitFor(() => screen.getByText(/PDF elegido/));
+      for (const aviso of Object.values(PDF_NOTICES)) expect(screen.queryByText(aviso)).toBeNull();
+    });
+
+    it('marcar visible el movimiento con PDF suma el agregado al aviso de la spec 003', async () => {
       const user = userEvent.setup();
       render(<Editar original={testMovimientoDetalle({ visible: false, pdf: PDF_GUARDADO })} onSubmit={vi.fn()} />);
-
-      await user.click(screen.getByRole('checkbox', { name: 'PDF visible para el cliente' }));
-
-      screen.getByText(PDF_NOTICES.whenMovementVisible);
-    });
-
-    it('marcar visible el movimiento con el PDF visible suma el agregado al aviso de la spec 003', async () => {
-      const user = userEvent.setup();
-      render(
-        <Editar
-          original={testMovimientoDetalle({ visible: false, pdf: { ...PDF_GUARDADO, visible: true } })}
-          onSubmit={vi.fn()}
-        />,
-      );
 
       await user.click(screen.getByRole('checkbox', { name: 'Visible para el cliente' }));
 
@@ -158,8 +158,8 @@ describe('FormularioMovimiento con PDF', () => {
       expect(aviso.textContent).toContain(PDF_NOTICES.alsoPdf);
     });
 
-    it('sin cambios de visibilidad no hay aviso del PDF', () => {
-      render(<Editar original={testMovimientoDetalle({ visible: true, pdf: { ...PDF_GUARDADO, visible: true } })} onSubmit={vi.fn()} />);
+    it('sin cambios no hay aviso del PDF', () => {
+      render(<Editar original={testMovimientoDetalle({ visible: true, pdf: PDF_GUARDADO })} onSubmit={vi.fn()} />);
 
       for (const aviso of Object.values(PDF_NOTICES)) expect(screen.queryByText(aviso)).toBeNull();
     });

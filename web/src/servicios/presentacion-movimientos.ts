@@ -90,8 +90,8 @@ export function authorName(autor: AutorResumen): string {
 }
 
 /**
- * Un valor del historial de cambios como se muestra (RF-22). El PDF, con su código, su tamaño y
- * su visibilidad (spec 010, RF-21): "K7Q2MX, 830 KB, oculto para el cliente", o "Sin PDF".
+ * Un valor del historial de cambios como se muestra (RF-22). El PDF, con su tamaño, sin el código
+ * (spec 010, RF-21): "830 KB", o "Sin PDF".
  */
 export function formatChangeValue(
   campo: CampoMovimiento,
@@ -99,8 +99,9 @@ export function formatChangeValue(
 ): string {
   if (campo === 'pdf') {
     if (valor === null || typeof valor !== 'object') return 'Sin PDF';
-    const visibilidad = valor.visible ? 'visible para el cliente' : 'oculto para el cliente';
-    return `${valor.codigo}, ${formatPdfSize(valor.tamano)}, ${visibilidad}`;
+    // El código no se muestra: no le dice nada a quien lee el historial (RF-21). Tampoco la
+    // visibilidad que traen los cambios viejos: el PDF ya no la tiene (RF-17).
+    return formatPdfSize(valor.tamano);
   }
   if (valor === null || typeof valor === 'object') return EMPTY_VALUE;
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';

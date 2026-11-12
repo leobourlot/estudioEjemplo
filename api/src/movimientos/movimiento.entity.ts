@@ -91,17 +91,14 @@ export class Movimiento {
   modificadoEn: Date | null;
 
   // NULL si no tiene PDF (spec 010, RF-1). La relación nunca trae el contenido (plan 010, D1).
+  // El PDF no tiene visibilidad propia: el cliente lo ve si puede ver el movimiento (spec 010,
+  // RF-17, RF-33).
   @Column({ type: 'int', nullable: true })
   pdfId: number | null;
 
   @ManyToOne(() => Pdf, { nullable: true })
   @JoinColumn({ name: 'pdfId', foreignKeyConstraintName: 'FK_movimientos_pdf' })
   pdf: Relation<Pdf> | null;
-
-  // Si el cliente puede ver el PDF, además del movimiento (spec 010, RF-17, RF-33). Siempre
-  // false si no hay PDF.
-  @Column({ type: 'boolean', default: false })
-  pdfVisible: boolean;
 
   @OneToMany(() => CambioMovimiento, (cambio) => cambio.movimiento)
   cambios: Relation<CambioMovimiento>[];

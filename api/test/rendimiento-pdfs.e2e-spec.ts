@@ -117,13 +117,13 @@ describe('rendimiento con PDF', () => {
     for (const [index, { id }] of primeros.entries()) {
       const contenido = index < 3 ? bufferOfSize(BIG) : minimalPdf();
       const pdfId = await insertPdf(`REN${String(index).padStart(3, '0')}`, contenido);
-      await repository.update(id, { pdfId, pdfVisible: true });
+      await repository.update(id, { pdfId });
     }
     // Dos PDF de 5 MB más, para las cinco descargas simultáneas.
     for (const [index, id] of bigMovementIds.slice(3).entries()) {
       await repository.update(id, { pdfId: null });
       const pdfId = await insertPdf(`BIG${index}`, bufferOfSize(BIG));
-      await repository.update(id, { pdfId, pdfVisible: true });
+      await repository.update(id, { pdfId });
     }
 
     // Fallos con PDF de 5 MB.

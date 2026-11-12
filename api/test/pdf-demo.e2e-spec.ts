@@ -87,13 +87,13 @@ describe('PDF de los datos de muestra y restablecimiento', () => {
     }
   });
 
-  it('MUES01 está, visible, en un movimiento visible de una causa de la cliente de prueba', async () => {
+  it('MUES01 está en un movimiento visible de una causa de la cliente de prueba', async () => {
     const [fila]: { causaId: number; movimientoId: number }[] = await queryRunner.query(
       `SELECT m.causaId, m.id AS movimientoId FROM movimientos m
        JOIN pdfs p ON p.id = m.pdfId
        JOIN partes pa ON pa.causaId = m.causaId AND pa.vigente = 1
        JOIN clientes c ON c.usuarioId = pa.clienteId
-       WHERE p.codigo = 'MUES01' AND m.visible = 1 AND m.anulado = 0 AND m.pdfVisible = 1
+       WHERE p.codigo = 'MUES01' AND m.visible = 1 AND m.anulado = 0
          AND c.dni = ?`,
       [CLIENTE_DE_PRUEBA],
     );

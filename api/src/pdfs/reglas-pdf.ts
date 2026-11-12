@@ -27,7 +27,6 @@ export const PDF_MESSAGES = {
   onlyOne: 'Podés adjuntar un solo PDF',
   invalidForm: 'Los datos del formulario no son válidos',
   notFound: 'No existe ese PDF',
-  movementWithoutPdf: 'El movimiento no tiene PDF',
   attachAndRemove: 'No se puede adjuntar y quitar el PDF a la vez',
   demoLimit: 'En la demo se pueden tener hasta 4 PDF. Quitá uno para subir otro',
   quitarPdf: 'Para quitar el PDF, indicá sí',

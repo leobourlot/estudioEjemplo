@@ -39,7 +39,6 @@ function movement(overrides: Partial<Movimiento> = {}): Movimiento {
     modificadoEn: new Date('2026-10-02T12:00:00Z'),
     pdfId: null,
     pdf: null,
-    pdfVisible: false,
     cambios: [],
     ...overrides,
   } as Movimiento;
@@ -60,7 +59,7 @@ const leaksAccountData = (value: unknown) =>
   /email|contrasena|@estudio\.com|\$2b\$/.test(JSON.stringify(value));
 
 describe('toMovimientoCliente (RF-31; spec 004, RF-21)', () => {
-  it('tiene solo id, fecha, tipo, texto, la marca de fecha futura y si tiene un PDF visible', () => {
+  it('tiene solo id, fecha, tipo, texto, la marca de fecha futura y si tiene PDF', () => {
     expect(toMovimientoCliente(movement(), NOW)).toEqual({
       id: 7,
       fecha: '2026-10-06',
@@ -72,12 +71,9 @@ describe('toMovimientoCliente (RF-31; spec 004, RF-21)', () => {
     });
   });
 
-  it('tienePdf solo con un PDF marcado como visible (spec 010, RF-33, RF-35)', () => {
-    expect(toMovimientoCliente(movement({ pdfId: 9, pdfVisible: true }), NOW).tienePdf).toBe(true);
-    expect(toMovimientoCliente(movement({ pdfId: 9, pdfVisible: false }), NOW).tienePdf).toBe(false);
-    expect(toMovimientoCliente(movement({ pdfId: null, pdfVisible: false }), NOW).tienePdf).toBe(
-      false,
-    );
+  it('tienePdf si el movimiento tiene PDF, que no tiene visibilidad propia (spec 010, RF-33)', () => {
+    expect(toMovimientoCliente(movement({ pdfId: 9 }), NOW).tienePdf).toBe(true);
+    expect(toMovimientoCliente(movement({ pdfId: null }), NOW).tienePdf).toBe(false);
   });
 
   it('con texto para el cliente, usa ese texto y nunca incluye la descripción', () => {
@@ -130,7 +126,7 @@ describe('toMovimientoResumen (RF-24, RF-36)', () => {
       creadoPor: { id: 1, nombre: 'Nombre1', apellido: 'Apellido1', activo: true },
       creadoEn: new Date('2026-10-01T12:00:00Z'),
       // Sin PDF (spec 010, RF-30).
-      pdf: null,
+      tienePdf: false,
     });
   });
 

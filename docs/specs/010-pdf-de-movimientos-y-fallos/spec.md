@@ -1,24 +1,24 @@
 # Spec 010 — PDF de movimientos y fallos
 
 ## Contexto y objetivo
-Hoy el estudio registra lo que pasa en cada expediente con movimientos (spec 003) y comparte la jurisprudencia con fallos (spec 005), pero solo como texto: el escrito presentado, la resolución o el fallo completo quedan fuera del sistema, en el correo o en la computadora de quien los descargó. Para leer el documento hay que buscarlo en otro lado, y el cliente que quiere ver la resolución de su causa tiene que pedirla. Las specs 003 y 005 dejaron los adjuntos fuera de alcance. Esta spec permite que administradores y abogados suban un archivo PDF a cada movimiento y a cada fallo, y que lo vean y lo descarguen desde el panel. El archivo se guarda en la base de datos, junto con los demás datos del sistema (principio 5), idéntico al que se subió, así que un documento firmado digitalmente conserva su firma. Como los documentos de una causa están amparados por el secreto profesional, el PDF de un movimiento nace oculto para el cliente, igual que el movimiento: el cliente solo lo ve si un integrante lo decide expresamente y si además puede ver el movimiento. Los PDF de los fallos son, como toda la jurisprudencia, solo del panel.
+Hoy el estudio registra lo que pasa en cada expediente con movimientos (spec 003) y comparte la jurisprudencia con fallos (spec 005), pero solo como texto: el escrito presentado, la resolución o el fallo completo quedan fuera del sistema, en el correo o en la computadora de quien los descargó. Para leer el documento hay que buscarlo en otro lado, y el cliente que quiere ver la resolución de su causa tiene que pedirla. Las specs 003 y 005 dejaron los adjuntos fuera de alcance. Esta spec permite que administradores y abogados suban un archivo PDF a cada movimiento y a cada fallo, y que lo vean y lo descarguen desde el panel. El archivo se guarda en la base de datos, junto con los demás datos del sistema (principio 5), idéntico al que se subió, así que un documento firmado digitalmente conserva su firma. Como los documentos de una causa están amparados por el secreto profesional, el PDF de un movimiento no tiene una visibilidad propia: sigue la del movimiento, que nace oculto (spec 003). El cliente solo ve el PDF de un movimiento que puede ver, y no ve ningún PDF sin que un integrante haya hecho visible su movimiento. Los PDF de los fallos son, como toda la jurisprudencia, solo del panel.
 
 Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como estableció la spec 009, RF-12). Donde agrega algo a un requisito de esas specs, lo indica con su número. Las specs 003, 005 y 009 llevan, en lo que dejaban fuera de alcance, una nota que remite a esta.
 
 ## Usuarios / actores
-- **Integrante del estudio** (administrador o abogado, según la spec 001): sube, reemplaza, quita, ve y descarga el PDF de cualquier movimiento y de cualquier fallo, y decide si el PDF de un movimiento es visible para el cliente. Todos los integrantes trabajan sobre todas las causas y sobre toda la jurisprudencia (spec 002, RF-35; spec 005).
-- **Cliente** (spec 001): no sube archivos. En el portal ve y descarga el PDF de un movimiento de sus propias causas solo si puede ver el movimiento y el PDF está marcado como visible.
+- **Integrante del estudio** (administrador o abogado, según la spec 001): sube, reemplaza, quita, ve y descarga el PDF de cualquier movimiento y de cualquier fallo. Decide si el cliente ve el PDF de un movimiento al decidir si ve el movimiento. Todos los integrantes trabajan sobre todas las causas y sobre toda la jurisprudencia (spec 002, RF-35; spec 005).
+- **Cliente** (spec 001): no sube archivos. En el portal ve y descarga el PDF de un movimiento de sus propias causas solo si puede ver el movimiento.
 - **Visitante** (spec 001): no accede a ningún PDF.
 
 ## Historias de usuario
 - H1: Como integrante del estudio quiero adjuntar a un movimiento el PDF del escrito, la providencia o la resolución, para tener el documento junto a su registro y no buscarlo en otro lado.
 - H2: Como integrante del estudio quiero adjuntar el PDF al cargar el movimiento o más tarde, porque a veces el documento llega después.
-- H3: Como integrante del estudio quiero que el PDF de un movimiento nazca oculto para el cliente y decidir yo si mostrárselo, porque el movimiento puede ser visible y su documento no (por ejemplo, una pericia con datos de terceros).
+- H3: Como integrante del estudio quiero que el cliente vea el PDF de un movimiento solo cuando ve el movimiento, para decidir la visibilidad en un solo lugar y no tener que acordarme de marcar dos cosas.
 - H4: Como integrante del estudio quiero adjuntar a un fallo su texto completo en PDF, para leerlo sin depender de que la fuente siga en línea.
 - H5: Como integrante del estudio quiero reemplazar un PDF equivocado por el correcto, o quitarlo, y que el sistema no conserve el que quité, por si contenía datos que no debían estar.
 - H6: Como integrante del estudio quiero subir PDF firmados digitalmente y que la firma siga siendo válida al descargarlos.
 - H7: Como integrante del estudio quiero ver un PDF en el navegador o descargarlo, desde la computadora o desde el celular.
-- H8: Como integrante del estudio quiero saber quién subió, reemplazó o quitó cada PDF y cuándo, y quién lo hizo visible para el cliente.
+- H8: Como integrante del estudio quiero saber quién subió, reemplazó o quitó cada PDF y cuándo.
 - H9: Como cliente quiero ver y descargar el documento de un movimiento de mi causa, cuando el estudio me lo comparte, para no tener que pedirlo.
 - H10: Como integrante del estudio quiero que nadie fuera del estudio pueda abrir un PDF que no le corresponde, aunque copie o adivine su dirección.
 
@@ -51,27 +51,26 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   Por ejemplo: "1 KB", "850 KB", "2 MB", "5 MB".
 
 ### En el formulario
-- RF-10: EL SISTEMA ofrece adjuntar, reemplazar y quitar el PDF dentro del formulario de carga y del de modificación del movimiento o del fallo, y, en el de un movimiento, marcar si el PDF es visible para el cliente. Los cambios del PDF se guardan al guardar el formulario, junto con los demás datos, en una sola operación: se guarda todo o nada.
+- RF-10: EL SISTEMA ofrece adjuntar, reemplazar y quitar el PDF dentro del formulario de carga y del de modificación del movimiento o del fallo. Los cambios del PDF se guardan al guardar el formulario, junto con los demás datos, en una sola operación: se guarda todo o nada.
 - RF-11: SI el PDF o algún otro dato del formulario se rechaza, ENTONCES EL SISTEMA no guarda nada: ni el movimiento o el fallo, ni el PDF. El formulario conserva lo escrito. Si se rechazó otro dato, conserva también el archivo elegido; si se rechazó el archivo, lo descarta y hay que elegir otro. MIENTRAS haya un archivo rechazado, en la pantalla o por la api, sin elegir otro ni descartarlo, EL SISTEMA no envía el formulario y muestra el mensaje "El PDF elegido no se adjuntó: <motivo>. Elegí otro archivo o descartalo"; con "Descartar" se puede guardar sin cambiar el PDF (agregado el 11/11/2026, en la demo manual: antes se guardaba el resto sin avisar que el PDF no había cambiado).
 - RF-12: MIENTRAS se sube un PDF, EL SISTEMA muestra que la subida está en curso y no permite enviar el formulario de nuevo hasta que termine. La subida cuenta como uso de la sesión (spec 001, RF-12) mientras dura: la sesión no vence durante una subida en curso. SI la subida se interrumpe, ENTONCES EL SISTEMA no guarda nada, ni los datos ni el archivo, muestra el mensaje "No se pudo guardar. Probá de nuevo" y el formulario conserva lo escrito y el archivo elegido.
 - RF-13: CUANDO se guarda un formulario que reemplaza o quita un PDF guardado, EL SISTEMA pide antes confirmación, con el mensaje "El PDF actual se borrará definitivamente y será reemplazado por el nuevo. No se puede deshacer" o "El PDF se borrará definitivamente. No se puede deshacer", según corresponda. Si no se confirma, no guarda nada y el formulario sigue abierto con lo escrito.
 - RF-14: CUANDO se guarda un reemplazo o un quitado confirmado, EL SISTEMA borra el PDF anterior de la base de datos. El sistema ya no lo conserva ni lo puede recuperar.
-- RF-15: EL SISTEMA solo muestra la opción de visibilidad del PDF mientras el formulario tiene un PDF: el ya guardado o uno elegido que la interfaz no rechazó. Si se quita el PDF, o si la interfaz rechaza el archivo elegido, la opción desaparece. SI el servidor recibe una visibilidad de PDF para un movimiento que no tiene ni recibe un PDF, ENTONCES rechaza la operación con el mensaje "El movimiento no tiene PDF".
+- RF-15: EL SISTEMA no ofrece una opción de visibilidad propia del PDF: en el formulario de un movimiento, la única marca de visibilidad es la del movimiento (spec 003). SI el servidor recibe una visibilidad del PDF (`pdfVisible`), ENTONCES la rechaza como cualquier campo desconocido, con el mensaje "El campo pdfVisible no está permitido", sin guardar nada (modificado el 12/11/2026: antes el PDF tenía una marca de visibilidad propia, que nacía desmarcada).
 
 ### PDF de un movimiento
-- RF-16: CUANDO un integrante adjunta un PDF a un movimiento no anulado de una causa activa, EL SISTEMA lo guarda como no visible para el cliente, salvo que el integrante lo marque como visible en ese mismo formulario, y registra quién lo subió y cuándo. Al elegir un archivo que reemplaza a otro, la marca de visibilidad vuelve a quedar desmarcada: el nuevo nace oculto aunque el anterior fuera visible, salvo que se lo marque.
-- RF-17: EL SISTEMA registra en el PDF de un movimiento si es visible para el cliente, con una marca propia, independiente de la visibilidad del movimiento. Un integrante la cambia en los dos sentidos. CUANDO el PDF pasa a no visible, se quita o se reemplaza, el cliente deja de verlo a partir de su siguiente acción (spec 004, RF-3).
-- RF-18: CUANDO un integrante marca como visible el movimiento o su PDF, EL SISTEMA muestra un único aviso informativo, que no exige confirmación:
-  - Si el movimiento pasa a visible y el PDF es visible: el aviso de la spec 003 (RF-9), con el agregado "El cliente también podrá ver y descargar el PDF".
-  - Si el PDF pasa a visible y el movimiento ya era visible: "El cliente podrá ver y descargar este PDF".
-  - Si el PDF pasa a visible y el movimiento no es visible: "El cliente podrá ver y descargar este PDF cuando el movimiento sea visible".
+- RF-16: CUANDO un integrante adjunta un PDF a un movimiento no anulado de una causa activa, EL SISTEMA lo guarda y registra quién lo subió y cuándo. El cliente lo ve si puede ver el movimiento (RF-33): un PDF adjuntado o reemplazado en un movimiento visible queda a la vista del cliente al guardar.
+- RF-17: EL SISTEMA no registra una visibilidad propia del PDF de un movimiento: el PDF es visible para el cliente si y solo si el cliente puede ver el movimiento (spec 003, RF-30). CUANDO el movimiento pasa a no visible o se anula, o el PDF se quita, el cliente deja de verlo a partir de su siguiente acción (spec 004, RF-3). CUANDO el PDF se reemplaza, el cliente ve el nuevo.
+- RF-18: CUANDO un integrante deja a la vista del cliente un PDF, EL SISTEMA muestra un único aviso informativo, que no exige confirmación:
+  - Si el movimiento pasa a visible y tiene PDF: el aviso de la spec 003 (RF-9), con el agregado "El cliente también podrá ver y descargar el PDF".
+  - Si el movimiento ya era visible, sigue siéndolo y se le adjunta o reemplaza el PDF: "El cliente podrá ver y descargar este PDF".
 
-  Si en la misma operación corresponde además el aviso de la spec 003 (RF-13), se muestran los dos, primero el de la spec 003. Adjuntar, reemplazar, quitar u ocultar el PDF no dispara por sí solo el aviso de la spec 003 (RF-13).
-- RF-19: CUANDO un integrante restaura un movimiento marcado como visible que tiene un PDF visible, EL SISTEMA le muestra antes el aviso "Al restaurarlo, el cliente volverá a ver este movimiento y su PDF" y le pide confirmación. Si no confirma, no lo restaura.
-- RF-20: EL SISTEMA cuenta como modificación del movimiento (spec 003, RF-2) adjuntar, reemplazar o quitar su PDF y cambiar la visibilidad del PDF. Como en la spec 003 (RF-10), no son modificación de la causa.
-- RF-21: EL SISTEMA registra en el historial de cambios del movimiento (spec 003, RF-20) el PDF como un dato más del movimiento: como valores anterior y nuevo, si tiene PDF y, si lo tiene, su código, su tamaño y su visibilidad. Nunca registra su contenido. Un reemplazo queda registrado por el cambio de código.
-- RF-22: SI se intenta adjuntar, reemplazar o quitar el PDF de un movimiento anulado, o cambiar su visibilidad, ENTONCES EL SISTEMA lo rechaza con el mensaje de la spec 003 (RF-15): "El movimiento está anulado. Restauralo para modificarlo". El PDF se conserva mientras el movimiento está anulado, y los integrantes lo pueden ver y descargar. Al restaurar el movimiento, el PDF conserva la visibilidad que tenía (spec 003, RF-18).
-- RF-23: SI se intenta adjuntar, reemplazar o quitar el PDF de un movimiento de una causa desactivada, o cambiar su visibilidad, ENTONCES EL SISTEMA lo rechaza con el mensaje de la spec 003 (RF-28): "La causa está desactivada". Los integrantes pueden seguir viendo y descargando el PDF. CUANDO la causa se reactiva, los clientes vinculados vuelven a ver los PDF visibles de sus movimientos visibles (spec 002, RF-42).
+  En un movimiento que no queda visible no hay aviso del PDF. Si en la misma operación corresponde además el aviso de la spec 003 (RF-13), se muestran los dos, primero el de la spec 003. Adjuntar, reemplazar o quitar el PDF no dispara por sí solo el aviso de la spec 003 (RF-13).
+- RF-19: CUANDO un integrante restaura un movimiento marcado como visible que tiene PDF, EL SISTEMA le muestra antes el aviso "Al restaurarlo, el cliente volverá a ver este movimiento y su PDF" y le pide confirmación. Si no confirma, no lo restaura.
+- RF-20: EL SISTEMA cuenta como modificación del movimiento (spec 003, RF-2) adjuntar, reemplazar o quitar su PDF. Como en la spec 003 (RF-10), no son modificación de la causa.
+- RF-21: EL SISTEMA registra en el historial de cambios del movimiento (spec 003, RF-20) el PDF como un dato más del movimiento: como valores anterior y nuevo, si tiene PDF y, si lo tiene, su código y su tamaño. Nunca registra su contenido. En pantalla, cada valor muestra solo el tamaño (por ejemplo, "17 KB"), o "Sin PDF"; el código queda registrado, pero no se muestra. Los cambios registrados antes del 12/11/2026 guardan además la visibilidad propia que tenía el PDF, que no se muestra.
+- RF-22: SI se intenta adjuntar, reemplazar o quitar el PDF de un movimiento anulado, ENTONCES EL SISTEMA lo rechaza con el mensaje de la spec 003 (RF-15): "El movimiento está anulado. Restauralo para modificarlo". El PDF se conserva mientras el movimiento está anulado, y los integrantes lo pueden ver y descargar. Al restaurar el movimiento, el cliente vuelve a ver el PDF si el movimiento es visible (spec 003, RF-18).
+- RF-23: SI se intenta adjuntar, reemplazar o quitar el PDF de un movimiento de una causa desactivada, ENTONCES EL SISTEMA lo rechaza con el mensaje de la spec 003 (RF-28): "La causa está desactivada". Los integrantes pueden seguir viendo y descargando el PDF. CUANDO la causa se reactiva, los clientes vinculados vuelven a ver los PDF de sus movimientos visibles (spec 002, RF-42).
 
 ### PDF de un fallo
 - RF-24: CUANDO un integrante adjunta un PDF a un fallo activo, al cargarlo o al modificarlo, EL SISTEMA lo guarda y registra quién lo subió y cuándo. Adjuntar, reemplazar o quitar el PDF cuenta como modificación del fallo (spec 005, RF-2). El reemplazo y el quitado siguen RF-13 y RF-14.
@@ -86,21 +85,19 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
 
   Cada opción se anuncia con el dato que la identifica, para que no se lean todas iguales (por ejemplo, "Ver el PDF del movimiento del 24/10/2026"), y "Ver PDF" anuncia que se abre en una pestaña nueva.
 - RF-29: EL SISTEMA solo permite pedir un PDF a través de su causa y su movimiento, o de su fallo. El PDF no tiene un identificador propio, y su código (RF-6) no sirve para pedirlo.
-- RF-30: CUANDO un integrante consulta el historial de movimientos de una causa (spec 003, RF-24), EL SISTEMA muestra además, en cada movimiento que tiene PDF, la leyenda "PDF" y si es visible u oculto para el cliente.
-- RF-31: CUANDO un integrante consulta un movimiento (spec 003, RF-22), EL SISTEMA muestra además, si tiene PDF, su tamaño (RF-9), quién lo subió y cuándo, si es visible para el cliente, y las opciones de RF-28.
+- RF-30: CUANDO un integrante consulta el historial de movimientos de una causa (spec 003, RF-24), EL SISTEMA muestra además, en cada movimiento que tiene PDF, la leyenda "PDF".
+- RF-31: CUANDO un integrante consulta un movimiento (spec 003, RF-22), EL SISTEMA muestra además, si tiene PDF, su tamaño (RF-9), quién lo subió y cuándo, y las opciones de RF-28.
 - RF-32: CUANDO un integrante consulta el listado de jurisprudencia (spec 005, RF-22), EL SISTEMA muestra además la leyenda "PDF" en cada fallo que tiene uno. CUANDO consulta un fallo (spec 005, RF-19), muestra además, si tiene PDF, su tamaño, quién lo subió y cuándo, y las opciones de RF-28.
 
 ### PDF en el portal del cliente
-- RF-33: EL SISTEMA considera que un cliente puede ver el PDF de un movimiento solo si se cumplen las dos condiciones:
-  - El cliente puede ver el movimiento (spec 003, RF-30): es visible, no está anulado y el cliente está vinculado a su causa.
-  - El PDF está marcado como visible (RF-17).
+- RF-33: EL SISTEMA considera que un cliente puede ver el PDF de un movimiento si y solo si el movimiento tiene PDF y el cliente puede ver el movimiento (spec 003, RF-30): es visible, no está anulado y el cliente está vinculado a su causa, que está activa.
 
   Esta es la única regla que decide qué PDF ve un cliente, y se aplica siempre en el servidor, en cada acción del cliente (spec 004, RF-3). Un cliente solo puede ver PDF de sus propias causas.
 - RF-34: CUANDO un cliente consulta los movimientos de su causa (spec 004, RF-21) o abre un movimiento (spec 004, RF-22), EL SISTEMA muestra la leyenda "PDF" y las opciones de RF-28 solo en los movimientos cuyo PDF puede ver. En los demás no muestra ninguna opción ni indicio de PDF, así que el portal nunca le ofrece pedir un PDF que no puede ver.
 - RF-35: EL SISTEMA solo envía al cliente, de cada PDF que puede ver, lo necesario para verlo y descargarlo: que lo tiene y, al pedirlo, el archivo con su nombre (RF-7). Esto se suma a lo que enumera la spec 004 (RF-30). El portal no muestra el tamaño. Nunca le envía:
-  - Si un movimiento tiene un PDF que no puede ver.
+  - Si un movimiento que no puede ver tiene PDF.
   - Quién subió, reemplazó o quitó el PDF, ni cuándo.
-  - Si el PDF fue reemplazado o quitado, ni los cambios de su visibilidad.
+  - Si el PDF fue reemplazado o quitado.
 - RF-36: EL SISTEMA no deja copias del PDF en la caché del navegador, ni en el portal ni en el panel. Ver o descargar un PDF cuenta como acción del cliente (spec 004, RF-3). Una copia que el usuario descarga queda en su dispositivo, fuera del sistema: cuando la sesión se cierra, el portal no muestra nada de esa sesión (spec 004, RF-5), pero el archivo descargado sigue ahí.
 
 ### Abrir un PDF sin permiso
@@ -109,17 +106,17 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Con un cambio de contraseña pendiente: sigue la spec 001 (RF-11).
   - Con sesión, si no puede ver ese PDF: EL SISTEMA lo lleva a su pantalla de inicio (el panel para un integrante, el portal para un cliente, spec 001, RF-20) con el mensaje "No existe ese PDF".
 
-  Para un cliente, no puede ver el PDF si la causa no existe, es ajena o está desactivada, si el movimiento no existe, no pertenece a esa causa, está oculto o anulado, si no tiene PDF o lo tiene oculto, o si el PDF es de un fallo. Para un integrante, si la causa, el movimiento o el fallo no existen o no tienen PDF. En todos esos casos EL SISTEMA responde siempre lo mismo, sin revelar de cuál se trata.
+  Para un cliente, no puede ver el PDF si la causa no existe, es ajena o está desactivada, si el movimiento no existe, no pertenece a esa causa, está oculto o anulado, si no tiene PDF, o si el PDF es de un fallo. Para un integrante, si la causa, el movimiento o el fallo no existen o no tienen PDF. En todos esos casos EL SISTEMA responde siempre lo mismo, sin revelar de cuál se trata.
 
 ### Permisos e integridad
-- RF-38: EL SISTEMA solo permite a administradores y abogados, solo desde el panel, adjuntar, reemplazar, quitar, ver y descargar el PDF de cualquier movimiento y de cualquier fallo, y cambiar la visibilidad del PDF de un movimiento. Un cliente solo ve y descarga, desde el portal, los PDF de RF-33. Cualquier otro intento de un cliente o de un visitante se rechaza según la spec 001 (RF-18 y RF-19), o según RF-37 si abre la dirección de un PDF. Un integrante con cambio de contraseña pendiente tampoco accede (spec 001, RF-11). Este control se hace siempre en el servidor, aunque la interfaz oculte la opción.
+- RF-38: EL SISTEMA solo permite a administradores y abogados, solo desde el panel, adjuntar, reemplazar, quitar, ver y descargar el PDF de cualquier movimiento y de cualquier fallo. Un cliente solo ve y descarga, desde el portal, los PDF de RF-33. Cualquier otro intento de un cliente o de un visitante se rechaza según la spec 001 (RF-18 y RF-19), o según RF-37 si abre la dirección de un PDF. Un integrante con cambio de contraseña pendiente tampoco accede (spec 001, RF-11). Este control se hace siempre en el servidor, aunque la interfaz oculte la opción.
 - RF-39: SI la causa, el movimiento o el fallo de un formulario no existen, ENTONCES EL SISTEMA rechaza la operación con el mensaje de su spec: "No existe esa causa" o "No existe ese movimiento" (spec 003, RF-34), o "No existe ese fallo" (spec 005, RF-33).
 - RF-40: CUANDO se desactiva la cuenta de un integrante (spec 001), EL SISTEMA conserva su autoría en los PDF que subió y en el historial de cambios, y lo muestra como desactivado (como en la spec 003, RF-36, y la spec 005, RF-35).
 
 ### Modo demo
 - RF-41: MIENTRAS el modo demo está encendido (spec 009, RF-15), EL SISTEMA permite adjuntar, reemplazar, quitar, ver y descargar PDF igual que con el modo demo apagado, pero la base tiene como máximo 4 PDF en total, contando los de muestra. SI se intenta guardar un PDF nuevo cuando ya hay 4, ENTONCES EL SISTEMA lo rechaza con el mensaje "En la demo se pueden tener hasta 4 PDF. Quitá uno para subir otro". Un reemplazo no suma, porque borra el anterior. El tope se respeta aunque dos personas suban a la vez. Con el modo demo apagado no hay tope.
 - RF-42: EL SISTEMA trae en los datos de muestra (spec 009) dos PDF ficticios de una página, hechos para la demo, que dicen que son documentos de muestra:
-  - Uno en un movimiento visible de una causa de la cliente de prueba, marcado como visible para el cliente, para que la cliente de prueba lo vea en el portal.
+  - Uno en un movimiento visible de una causa de la cliente de prueba, para que la cliente de prueba lo vea en el portal.
   - Uno en un fallo.
 
   Ninguno contiene datos del estudio para el que se hizo el sistema ni de personas reales (spec 009, RF-12). El plan elige el movimiento y el fallo.
@@ -134,7 +131,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
 - Validación: el servidor valida el archivo y todos los datos recibidos, y rechaza los campos desconocidos, sin confiar en las validaciones de la interfaz (como en las specs 001 a 005). La interfaz rechaza antes de enviar un archivo que no es PDF o que supera los 5 MB, con los mensajes de RF-4, para no hacer esperar la subida, pero el servidor vuelve a verificarlo.
 - Registros del servidor: el contenido de los PDF, el nombre con el que se subieron y el tipo que informa el navegador nunca se escriben en los registros del servidor ni en los mensajes de error (RF-8). Los mensajes indican la regla incumplida, sin repetir nada del archivo.
 - Aislamiento: la regla de RF-33 se aplica en el servidor en toda consulta de un cliente. Un cliente nunca recibe un PDF que no puede ver, ni el PDF de un fallo, ni un indicio de que existen (principio 5).
-- Privacidad por defecto: ningún PDF de un movimiento es visible para el cliente sin una acción expresa de un integrante.
+- Privacidad por defecto: ningún PDF de un movimiento es visible para el cliente sin una acción expresa de un integrante: hacer visible el movimiento, que nace oculto (spec 003).
 - Persistencia: los PDF se guardan solo en la base de datos y solo se accede a ellos a través de la api (principio 5). El archivo elegido en un formulario vive solo en la memoria de la página mientras el formulario está abierto: nunca se guarda en el almacenamiento del navegador. Una copia que el usuario descarga queda en su dispositivo, fuera del sistema. Se acepta.
 - Respaldo: "borrar" un PDF (RF-14) es quitarlo de la base. Puede seguir en copias de seguridad anteriores, y en los archivos internos de MySQL hasta que se reescriban, fuera del alcance del sistema. Las copias de seguridad las administra quien opera el servidor.
 - Rendimiento, medido en el servidor, sin contar la conexión del usuario, con hasta 5 subidas o descargas al mismo tiempo:
@@ -142,7 +139,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Al ver o descargar un PDF de 5 MB, el servidor empieza a enviarlo en menos de 2 segundos.
   - Una vez recibido un PDF de 5 MB, el servidor termina de guardar el formulario en menos de 3 segundos.
 - Plataformas: ver y descargar funcionan en la computadora y en el celular. En un celular, "Ver PDF" puede descargar el archivo en lugar de mostrarlo, según el navegador. Se acepta.
-- Accesibilidad: las opciones para elegir, ver, descargar y quitar un PDF y la marca de visibilidad se usan con el teclado y se anuncian con el dato que las identifica (RF-28).
+- Accesibilidad: las opciones para elegir, ver, descargar y quitar un PDF se usan con el teclado y se anuncian con el dato que las identifica (RF-28).
 - Fechas: las fechas de subida se registran y se muestran en hora de Buenos Aires (UTC−3), como en las specs anteriores.
 - Stack: no se agrega ninguna dependencia sin justificarla en el plan, con su alternativa descartada (principio 1). Los cambios de la base se hacen con migraciones de TypeORM.
 - Idioma: todos los mensajes y textos de la interfaz en español.
@@ -172,25 +169,27 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Movimiento con datos válidos y un PDF que se rechaza: no se guarda nada; el formulario conserva lo escrito y hay que elegir otro archivo (RF-11).
   - Archivo rechazado y "Guardar" sin elegir otro: no se envía nada y se avisa que el PDF no se adjuntó. Con "Descartar", se guarda el resto sin cambiar el PDF (RF-11).
   - Movimiento con un PDF válido y una descripción con `<`: no se guarda nada; el formulario conserva lo escrito y el archivo elegido (RF-11).
-  - Formulario sin PDF: no muestra la opción de visibilidad del PDF. Si se elige un archivo que la interfaz rechaza, tampoco (RF-15).
-  - Pedido al servidor, armado a mano, que marca visible el PDF de un movimiento que no tiene: se rechaza con "El movimiento no tiene PDF" (RF-15).
+  - Formulario de un movimiento, con PDF o sin él: la única marca de visibilidad es la del movimiento (RF-15).
+  - Pedido al servidor, armado a mano, que envía una visibilidad del PDF: se rechaza con "El campo pdfVisible no está permitido" y no se guarda nada (RF-15).
   - Subida interrumpida (se corta la conexión): no se guarda nada, ni el movimiento ni el PDF (RF-12).
   - Subida lenta desde el celular que dura más que la sesión sin uso: la sesión no vence mientras dura la subida (RF-12).
   - La sesión vence antes de guardar el formulario: el guardado se rechaza como cualquier acción sin sesión (spec 001, RF-17), y hay que volver a ingresar y elegir el archivo.
 - **Reemplazo y quitado:**
   - Subir un PDF a un movimiento que ya tiene uno: al guardar se pide confirmación, y el anterior se borra definitivamente (RF-13, RF-14).
-  - PDF visible reemplazado: el nuevo nace oculto y el cliente deja de ver el anterior, salvo que el integrante marque el nuevo como visible en el mismo formulario (RF-16).
-  - Reemplazo por un PDF del mismo tamaño: el historial lo muestra por el cambio de código (RF-21).
+  - PDF de un movimiento visible reemplazado: el cliente ve el nuevo desde su siguiente acción. El aviso de RF-18 lo advierte (RF-16, RF-17).
+  - Reemplazo por un PDF del mismo tamaño: el historial registra el cambio, con quién y cuándo, aunque en pantalla los valores anterior y nuevo se vean iguales (RF-21).
   - PDF quitado por error: no se puede recuperar desde el sistema. Hay que volver a subirlo (RF-14). Puede seguir en una copia de seguridad anterior (requisitos no funcionales).
   - PDF con datos que no debían estar: al quitarlo o reemplazarlo, desaparece de la base. Si el cliente ya lo había descargado, conserva su copia, que queda fuera del sistema. Se acepta (RF-14, RF-36).
 - **Visibilidad para el cliente:**
-  - Movimiento visible con PDF oculto: el cliente ve el movimiento, sin ningún indicio de que tiene PDF (RF-34, RF-35).
-  - Movimiento oculto con PDF visible: el cliente no ve ninguno de los dos. El aviso de RF-18 lo advierte al marcar el PDF.
-  - Movimiento con PDF visible que pasa a visible: el aviso de la spec 003 (RF-9) dice que el cliente también podrá ver el PDF (RF-18).
-  - Movimiento visible con PDF visible que se anula: el cliente deja de ver los dos a partir de su siguiente acción. Al restaurarlo, se pide confirmación con el aviso de RF-19 y el cliente vuelve a verlos (RF-19, RF-22, RF-33).
+  - Movimiento visible con PDF: el cliente ve los dos (RF-33).
+  - Movimiento oculto con PDF: el cliente no ve ninguno de los dos (RF-33).
+  - Movimiento con PDF que pasa a visible: el aviso de la spec 003 (RF-9) dice que el cliente también podrá ver el PDF (RF-18).
+  - PDF adjuntado a un movimiento visible: el cliente lo ve desde su siguiente acción. El aviso de RF-18 lo advierte.
+  - Movimiento que se quiere mostrar sin su documento (por ejemplo, una pericia con datos de terceros): no se le adjunta el PDF, o se lo adjunta a otro movimiento que queda oculto (RF-17).
+  - Movimiento visible con PDF que se anula: el cliente deja de ver los dos a partir de su siguiente acción. Al restaurarlo, se pide confirmación con el aviso de RF-19 y el cliente vuelve a verlos (RF-19, RF-22, RF-33).
   - Causa desactivada y después reactivada: los clientes vinculados dejan de ver sus PDF y después vuelven a verlos (RF-23).
-  - Cliente con la pantalla abierta cuando el PDF se oculta o se quita: al elegir "Ver PDF" o "Descargar PDF", es llevado al portal con el mensaje "No existe ese PDF" (RF-37).
-  - Cliente con la pantalla abierta cuando el PDF se reemplaza por uno visible: recibe el PDF nuevo, porque se pide por su movimiento (RF-29). Se acepta.
+  - Cliente con la pantalla abierta cuando el movimiento se oculta o el PDF se quita: al elegir "Ver PDF" o "Descargar PDF", es llevado al portal con el mensaje "No existe ese PDF" (RF-37).
+  - Cliente con la pantalla abierta cuando el PDF se reemplaza: recibe el PDF nuevo, porque se pide por su movimiento (RF-29). Se acepta.
   - Cliente que escribe la dirección del PDF de un movimiento oculto, de una causa ajena o de un fallo: es llevado al portal con el mensaje "No existe ese PDF", igual en todos los casos (RF-37).
   - Cliente que copia la dirección de un PDF y la abre después de cerrar sesión, o la comparte: lleva a la pantalla de ingreso, y después de ingresar no abre el PDF (RF-37).
   - Dos clientes vinculados a la misma causa: ven los mismos PDF. No hay visibilidad por cliente, como en la spec 003.
@@ -205,19 +204,19 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Dos fallos con el mismo PDF: no hay aviso de repetido (RF-25).
   - Fallo con enlace a la fuente y PDF: se muestran los dos (spec 005, RF-19; RF-32).
 - **Historial:**
-  - PDF reemplazado varias veces: el historial de cambios del movimiento registra cada reemplazo, con quién, cuándo y el código de cada PDF, pero ninguno de los anteriores se puede abrir (RF-14, RF-21).
-  - Quién hizo visible el PDF para el cliente: se ve en el historial de cambios del movimiento (RF-21).
+  - PDF reemplazado varias veces: el historial de cambios del movimiento registra cada reemplazo, con quién y cuándo, y el tamaño de cada PDF, pero ninguno de los anteriores se puede abrir (RF-14, RF-21).
+  - Quién dejó el PDF a la vista del cliente: se ve en el historial de cambios del movimiento, por quién lo hizo visible o le adjuntó el PDF siendo visible (RF-21; spec 003, RF-20).
   - Fallos: como en la spec 005, solo se registran la carga y la última modificación, así que no queda un historial de los PDF de un fallo (spec 005, fuera de alcance).
 - **Concurrencia:**
   - Dos integrantes suben a la vez un PDF al mismo movimiento o fallo: queda el último y el primero se borra, sin que nadie haya confirmado ese borrado. En un movimiento, los dos quedan en el historial de cambios. Se acepta (RF-14, RF-21).
-  - Un integrante guarda un formulario abierto antes de que otro reemplazara el PDF o cambiara su visibilidad: puede dejar visible un PDF que no vio, o volver a mostrar uno recién ocultado. Se acepta por ahora; queda en el historial de cambios (RF-21).
+  - Un integrante guarda un formulario abierto antes de que otro reemplazara el PDF u ocultara el movimiento: puede volver a mostrar un movimiento recién ocultado, con su PDF. Se acepta por ahora; queda en el historial de cambios (RF-21).
   - Un integrante quita un PDF mientras otro lo descarga: la descarga en curso puede terminar o fallar. Después del quitado, nadie más lo recibe. Se acepta.
   - Un integrante anula el movimiento mientras otro guarda un formulario con un PDF: se resuelven de a una. Si la anulación queda primero, el guardado se rechaza y no se guarda nada (RF-11, RF-22).
 - **Demo:**
   - La cliente de prueba entra a la causa del movimiento de muestra: ve y descarga su PDF (RF-42).
   - Con 4 PDF en la base, un visitante intenta subir otro: se rechaza. Si reemplaza uno, se permite (RF-41).
   - Dos visitantes suben a la vez el cuarto y el quinto PDF: se guarda uno solo (RF-41).
-  - Un visitante sube un PDF ofensivo o con datos personales reales y lo marca como visible: los demás visitantes pueden verlo hasta el próximo restablecimiento. Se acepta, como los textos en la spec 009.
+  - Un visitante sube un PDF ofensivo o con datos personales reales a un movimiento visible: los demás visitantes pueden verlo hasta el próximo restablecimiento. Se acepta, como los textos en la spec 009.
   - Un visitante quita los PDF de muestra: el restablecimiento los vuelve a cargar (RF-43).
   - El restablecimiento falla a mitad de camino: la base queda con los datos y los PDF que tenía antes (RF-43; spec 009, RF-20).
 - **Accesos no permitidos:**
@@ -245,6 +244,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
 - Descargar juntos todos los PDF de una causa.
 - Guardar los archivos fuera de la base de datos (en carpetas del servidor o en servicios de almacenamiento).
 - Visibilidad distinta del PDF para cada cliente de una misma causa.
+- Una visibilidad del PDF distinta de la de su movimiento (RF-17).
 
 ## Criterios de finalización
 - Todos los RF y todos los requisitos no funcionales con al menos un test en verde. Solo se verifican en la demo manual el visor del navegador y el comportamiento en un celular real.
@@ -255,15 +255,15 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Que nada del nombre original ni del tipo informado se guarda ni aparece en los registros del servidor (RF-8).
   - Que cargar o modificar un movimiento o un fallo con su PDF se guarda todo o nada, también si la subida se interrumpe (RF-10 a RF-12).
   - Que la sesión no vence durante una subida en curso (RF-12).
-  - Que el PDF de un movimiento nace oculto si no se lo marca expresamente, también al reemplazar uno visible (RF-16).
+  - Que el cliente ve el PDF de un movimiento solo si ve el movimiento, también después de reemplazarlo (RF-16, RF-17).
   - Que reemplazar y quitar borran el PDF anterior de la base (RF-14).
-  - Que se rechaza una visibilidad de PDF para un movimiento sin PDF (RF-15).
-  - La regla de RF-33, con los casos de PDF oculto, movimiento oculto, movimiento anulado, movimiento restaurado, cliente desvinculado, causa desactivada y causa reactivada (RF-23, RF-33).
+  - Que se rechaza una visibilidad propia del PDF, con PDF o sin él (RF-15).
+  - La regla de RF-33, con los casos de movimiento oculto, movimiento anulado, movimiento sin PDF, movimiento restaurado, cliente desvinculado, causa desactivada y causa reactivada (RF-23, RF-33).
   - Que cada caso de RF-37 lleva al lugar que corresponde, y que todos los casos sin permiso responden exactamente lo mismo.
-  - Que ninguna respuesta del portal indica que un movimiento tiene un PDF oculto, ni incluye quién lo subió, cuándo, su tamaño o su historial (RF-35), ni datos de los PDF de los fallos (RF-27).
+  - Que ninguna respuesta del portal incluye quién subió el PDF, cuándo, su tamaño o su historial (RF-35), ni datos de los PDF de los fallos (RF-27).
   - Que un cliente no puede abrir el PDF de un fallo ni el de una causa ajena, y que un visitante y un integrante con cambio de contraseña pendiente no pueden abrir ni subir ninguno (RF-37, RF-38).
   - Que en un movimiento anulado, en una causa desactivada y en un fallo desactivado no se puede adjuntar, reemplazar ni quitar el PDF, pero sí verlo (RF-22, RF-23, RF-26).
-  - Que adjuntar, reemplazar, quitar y cambiar la visibilidad del PDF cuentan como modificación del movimiento o del fallo y quedan en el historial de cambios del movimiento con su código, tamaño y visibilidad, sin su contenido (RF-20, RF-21, RF-24).
+  - Que adjuntar, reemplazar y quitar el PDF cuentan como modificación del movimiento o del fallo y quedan en el historial de cambios del movimiento con su código y su tamaño, sin su contenido (RF-20, RF-21, RF-24).
   - Que el aviso de fallo repetido no tiene en cuenta el PDF (RF-25).
   - Que las respuestas con un PDF indican su tipo, piden al navegador no adivinar otro y se marcan como privadas y para no guardar, en el panel y en el portal (RF-36, requisitos no funcionales).
   - Que los listados no cargan el contenido de los PDF y cumplen sus tiempos con todos los movimientos o fallos con un PDF de 5 MB, y los tiempos de ver, descargar y guardar un PDF de 5 MB con 5 operaciones a la vez (requisitos no funcionales).
@@ -276,7 +276,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Que el formulario conserva lo escrito y, según el caso, el archivo elegido después de un rechazo o una interrupción (RF-11, RF-12).
   - Que no se puede enviar el formulario dos veces mientras sube (RF-12).
   - Las confirmaciones de reemplazo y de quitado, y que sin confirmar no se guarda nada (RF-13).
-  - Que la opción de visibilidad del PDF solo aparece con un PDF y que vuelve a quedar desmarcada al elegir otro archivo (RF-15, RF-16).
+  - Que el formulario no ofrece una visibilidad propia del PDF y no la envía (RF-15).
   - Cada aviso de RF-18 y su orden con el de la spec 003 (RF-13), y el aviso con confirmación al restaurar (RF-19).
   - Que el portal solo muestra la leyenda y las opciones del PDF en los movimientos cuyo PDF el cliente puede ver, y nunca el tamaño (RF-34, RF-35).
   - Que "Ver PDF" abre una pestaña nueva aislada y que cada opción se anuncia con su dato (RF-28).
@@ -284,12 +284,12 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
   - Que el archivo elegido no se guarda en el almacenamiento del navegador (requisitos no funcionales).
 - `pnpm test` y `pnpm lint` sin errores.
 - Demo manual:
-  1. Con un abogado, cargar un movimiento con un PDF firmado digitalmente y verificar que queda oculto para el cliente. Descargarlo y verificar que la firma sigue válida. Verificar que se rechazan una imagen renombrada como ".pdf", un archivo vacío y un PDF de más de 5 MB, y que en esos casos el formulario conserva lo escrito.
+  1. Con un abogado, cargar un movimiento oculto con un PDF firmado digitalmente y verificar que el cliente no ve ninguno de los dos. Descargarlo y verificar que la firma sigue válida. Verificar que se rechazan una imagen renombrada como ".pdf", un archivo vacío y un PDF de más de 5 MB, y que en esos casos el formulario conserva lo escrito.
   2. Abrir el movimiento y verificar el tamaño, quién lo subió y cuándo. Ver el PDF en una pestaña nueva y descargarlo, y verificar su nombre (por ejemplo, "2026-10-24 Resolucion K7Q2MX.pdf").
-  3. Marcar el movimiento como visible y verificar que el cliente ve el movimiento y no ve ningún indicio del PDF. Marcar el PDF como visible, verificar el aviso de RF-18 y que el cliente lo ve y lo descarga, también desde un celular.
-  4. Reemplazar el PDF, verificar la confirmación, que el nuevo nace oculto y que el cliente, con la pantalla abierta, es llevado al portal con "No existe ese PDF".
-  5. Quitar el PDF, verificar la confirmación y que el historial de cambios del movimiento registra la subida, la visibilidad, el reemplazo (con el cambio de código) y el quitado, con quién y cuándo.
-  6. Anular el movimiento con un PDF visible y verificar que el cliente deja de verlo, que el integrante lo sigue viendo y que no se puede reemplazar. Restaurarlo, verificar el aviso con confirmación y que el cliente lo vuelve a ver.
+  3. Marcar el movimiento como visible, verificar el aviso de RF-18 y que el cliente ve el movimiento y descarga el PDF, también desde un celular.
+  4. Reemplazar el PDF, verificar la confirmación y el aviso de RF-18, y que el cliente descarga el nuevo. Ocultar el movimiento y verificar que el cliente, con la pantalla abierta, es llevado al portal con "No existe ese PDF".
+  5. Quitar el PDF, verificar la confirmación y que el historial de cambios del movimiento registra la subida, el reemplazo y el quitado, con quién y cuándo.
+  6. Anular el movimiento visible con PDF y verificar que el cliente deja de verlo, que el integrante lo sigue viendo y que no se puede reemplazar. Restaurarlo, verificar el aviso con confirmación y que el cliente lo vuelve a ver.
   7. Con un administrador, adjuntar un PDF a un fallo, verificar la leyenda "PDF" en el listado, verlo y descargarlo con el nombre "Fallo aaaa-mm-dd código.pdf". Desactivar el fallo y verificar que no se puede cambiar el PDF, pero sí verlo.
   8. Ingresar como cliente y escribir la dirección del PDF de un fallo y la de un movimiento de otra causa: debe llevar al portal con "No existe ese PDF". Cerrar sesión y abrir la dirección de un PDF que sí veía: debe llevar a la pantalla de ingreso y, después de ingresar, al portal, sin abrir el PDF.
   9. Con el modo demo encendido, verificar que la cliente de prueba ve el PDF de muestra. Subir PDF hasta llegar a 4 y verificar que el quinto se rechaza y que un reemplazo se permite. Ejecutar el restablecimiento y verificar que quedan solo los dos de muestra.

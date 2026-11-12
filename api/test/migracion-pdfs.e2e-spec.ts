@@ -81,10 +81,6 @@ describe('migración de los PDF', () => {
     await dataSource?.destroy();
   });
 
-  it('es la última migración', () => {
-    expect(MIGRATIONS.at(-1)).toBe(CrearPdfs1794182400000);
-  });
-
   it('up crea la tabla pdfs', async () => {
     expect(await columns('pdfs')).toEqual([
       ['id', 'int', 'NO', null],
@@ -96,10 +92,11 @@ describe('migración de los PDF', () => {
     ]);
   });
 
-  it('up suma pdfId y pdfVisible a movimientos, y pdfId a fallos', async () => {
+  it('up suma pdfId a movimientos y a fallos', async () => {
     const movimientos = await columns('movimientos');
     expect(movimientos).toContainEqual(['pdfId', 'int', 'YES', null]);
-    expect(movimientos).toContainEqual(['pdfVisible', 'tinyint', 'NO', '0']);
+    // La visibilidad del PDF la quita QuitarVisibilidadDelPdf1794441600000 (RF-17).
+    expect(movimientos.map(([name]) => name)).not.toContain('pdfVisible');
     const fallos = await columns('fallos');
     expect(fallos).toContainEqual(['pdfId', 'int', 'YES', null]);
     expect(fallos.map(([name]) => name)).not.toContain('pdfVisible');
@@ -129,16 +126,10 @@ describe('migración de los PDF', () => {
     await clearData();
   });
 
-  it('un PDF no se comparte entre dos movimientos, y la visibilidad nace en falso (RF-1, RF-17)', async () => {
+  it('un PDF no se comparte entre dos movimientos (RF-1)', async () => {
     const pdfId = await insertPdf('MOV001');
-    const movementId = await insertMovement(pdfId);
+    await insertMovement(pdfId);
     await expect(insertMovement(pdfId)).rejects.toThrow(/UQ_movimientos_pdf/);
-
-    const [row]: { pdfVisible: number }[] = await queryRunner.query(
-      'SELECT pdfVisible FROM movimientos WHERE id = ?',
-      [movementId],
-    );
-    expect(row.pdfVisible).toBe(0);
     await clearData();
   });
 
@@ -165,7 +156,8 @@ describe('migración de los PDF', () => {
   });
 
   it('down quita las columnas y la tabla, y up las vuelve a crear', async () => {
-    await dataSource.undoLastMigration();
+    const fromPdfs = MIGRATIONS.length - MIGRATIONS.indexOf(CrearPdfs1794182400000);
+    for (let index = 0; index < fromPdfs; index++) await dataSource.undoLastMigration();
     expect(await queryRunner.hasTable('pdfs')).toBe(false);
     expect((await columns('movimientos')).map(([name]) => name)).not.toContain('pdfId');
     expect((await columns('movimientos')).map(([name]) => name)).not.toContain('pdfVisible');

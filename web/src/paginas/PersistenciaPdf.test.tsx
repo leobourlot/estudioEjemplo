@@ -14,7 +14,6 @@ vi.mock('../servicios/descarga-pdf', () => ({ openPdfInPlace: vi.fn(), saveFile:
 const PDF: PdfDetalle = {
   codigo: 'K7Q2MX',
   tamano: 850_000,
-  visible: false,
   subidoPor: { id: 1, nombre: 'Luis', apellido: 'Sosa', activo: true },
   subidoEn: '2026-10-01T15:00:00.000Z',
 };

@@ -7,16 +7,17 @@ import { ApiError, errorMessage } from './cliente-http';
  * muestran. No importa React (principio 3).
  */
 
-/** El PDF del formulario. */
+/**
+ * El PDF del formulario. No tiene visibilidad propia: en un movimiento, el cliente lo ve si ve el
+ * movimiento (RF-17).
+ */
 export interface PdfFormState {
-  /** El PDF ya guardado, o null si no hay. */
-  guardado: { visible: boolean } | null;
+  /** Si hay un PDF ya guardado. */
+  guardado: boolean;
   /** Un archivo elegido y ya validado (validatePdfFile), que se enviará al guardar. */
   archivo: File | null;
   /** Si se pidió quitar el PDF guardado. */
   quitar: boolean;
-  /** La marca de visibilidad del PDF para el cliente (solo en movimientos). */
-  visible: boolean;
   /**
    * El motivo por el que se rechazó el último archivo elegido, o null. Mientras está pendiente,
    * el formulario no se envía (RF-11).
@@ -30,20 +31,14 @@ export const PDF_CONFIRMATIONS = {
   remove: 'El PDF se borrará definitivamente. No se puede deshacer',
 } as const;
 
-/** El estado al abrir el formulario: el PDF guardado, si hay, con su visibilidad. */
-export function initialPdfState(guardado: { visible: boolean } | null): PdfFormState {
-  return {
-    guardado,
-    archivo: null,
-    quitar: false,
-    visible: guardado?.visible ?? false,
-    rechazo: null,
-  };
+/** El estado al abrir el formulario: si hay un PDF guardado. */
+export function initialPdfState(guardado: boolean): PdfFormState {
+  return { guardado, archivo: null, quitar: false, rechazo: null };
 }
 
-/** Elige un archivo: el nuevo nace oculto, aunque el que reemplaza fuera visible (RF-16). */
+/** Elige un archivo, que reemplaza al guardado si hay (RF-13). */
 export function choosePdf(state: PdfFormState, archivo: File): PdfFormState {
-  return { ...state, archivo, quitar: false, visible: false, rechazo: null };
+  return { ...state, archivo, quitar: false, rechazo: null };
 }
 
 /** Descarta el archivo elegido: vuelve al guardado. */
@@ -73,24 +68,17 @@ export function pendingRejectionMessage(state: PdfFormState): string | null {
 
 /** "Quitar PDF": quita el archivo elegido y pide quitar el guardado. */
 export function removePdf(state: PdfFormState): PdfFormState {
-  return { ...state, archivo: null, quitar: true, visible: false, rechazo: null };
-}
-
-export function setPdfVisible(state: PdfFormState, visible: boolean): PdfFormState {
-  return { ...state, visible };
+  return { ...state, archivo: null, quitar: true, rechazo: null };
 }
 
 /** Si el formulario termina con un PDF: el elegido o el guardado que no se quita. */
 export function hasPdf(state: PdfFormState): boolean {
-  return state.archivo !== null || (state.guardado !== null && !state.quitar);
+  return state.archivo !== null || (state.guardado && !state.quitar);
 }
-
-/** La casilla de visibilidad solo aparece si el formulario tiene un PDF (RF-15). */
-export const showsVisibilityOption = hasPdf;
 
 /** La confirmación que hay que pedir antes de guardar, o null (RF-13). */
 export function pdfConfirmation(state: PdfFormState): string | null {
-  if (state.guardado === null) return null;
+  if (!state.guardado) return null;
   if (state.archivo !== null) return PDF_CONFIRMATIONS.replace;
   return state.quitar ? PDF_CONFIRMATIONS.remove : null;
 }
@@ -118,28 +106,12 @@ export function afterSaveError(
 /** Lo que se suma a los datos del formulario, y el archivo a enviar, si hay (RF-10). */
 export interface PdfChanges {
   archivo: File | undefined;
-  datos: { pdfVisible?: boolean; quitarPdf?: true };
+  datos: { quitarPdf?: true };
 }
 
-/**
- * Los cambios del PDF para el pedido. `conVisibilidad` es false en los fallos, que no tienen
- * visibilidad para el cliente (RF-27).
- */
-export function pdfChanges(
-  state: PdfFormState,
-  { conVisibilidad }: { conVisibilidad: boolean },
-): PdfChanges {
-  if (state.archivo !== null) {
-    return {
-      archivo: state.archivo,
-      datos: conVisibilidad ? { pdfVisible: state.visible } : {},
-    };
-  }
-  if (state.quitar && state.guardado !== null) {
-    return { archivo: undefined, datos: { quitarPdf: true } };
-  }
-  if (conVisibilidad && state.guardado !== null && state.visible !== state.guardado.visible) {
-    return { archivo: undefined, datos: { pdfVisible: state.visible } };
-  }
+/** Los cambios del PDF para el pedido, iguales en movimientos y en fallos. */
+export function pdfChanges(state: PdfFormState): PdfChanges {
+  if (state.archivo !== null) return { archivo: state.archivo, datos: {} };
+  if (state.quitar && state.guardado) return { archivo: undefined, datos: { quitarPdf: true } };
   return { archivo: undefined, datos: {} };
 }

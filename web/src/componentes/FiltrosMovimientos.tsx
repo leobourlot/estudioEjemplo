@@ -44,8 +44,8 @@ export function FiltrosMovimientos({
     <div className="space-y-3">
       <ListaDeErrores messages={problems} />
       <div className="flex flex-wrap items-end gap-4">
-        <form onSubmit={handleSearch} className="flex items-end gap-2">
-          <div>
+        <form onSubmit={handleSearch} className="flex w-full items-end gap-2 sm:w-auto">
+          <div className="min-w-0 flex-1">
             <label htmlFor="buscarMovimientos" className={labelClass}>
               Buscar
             </label>
@@ -55,7 +55,7 @@ export function FiltrosMovimientos({
               placeholder="Descripción o texto para el cliente"
               value={draft.buscar}
               onChange={(event) => setDraft({ ...draft, buscar: event.target.value })}
-              className={`w-72 ${fieldClass}`}
+              className={`w-full sm:w-72 ${fieldClass}`}
             />
           </div>
           <button type="submit" className={SECONDARY_BUTTON_SMALL}>

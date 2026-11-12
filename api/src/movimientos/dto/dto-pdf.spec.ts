@@ -5,7 +5,6 @@ import { formatValidationErrors } from '../../configuracion/errores-de-validacio
 import { PDF_MESSAGES } from '../../pdfs/reglas-pdf.js';
 import { CreateMovimientoDto } from './crear-movimiento.dto.js';
 import { UpdateMovimientoDto } from './modificar-movimiento.dto.js';
-import { MOVIMIENTO_MESSAGES } from './reglas-movimiento.js';
 
 type DtoClass<T> = new () => T;
 
@@ -18,17 +17,15 @@ async function check<T extends object>(dto: DtoClass<T>, plain: object) {
 
 const MINIMAL = { fecha: '2024-03-01', tipo: 'providencia', descripcion: 'Se fija audiencia.' };
 
-/** Spec 010, RF-15 y RF-16: los campos del PDF en los DTO de movimientos. */
+/** Spec 010, RF-14 y RF-17: los campos del PDF en los DTO de movimientos. */
 describe('DTO de movimientos con PDF', () => {
-  it.each([true, false])('la carga acepta pdfVisible %s', async (pdfVisible) => {
-    const { instance, messages } = await check(CreateMovimientoDto, { ...MINIMAL, pdfVisible });
-
-    expect(messages).toEqual([]);
-    expect(instance.pdfVisible).toBe(pdfVisible);
-  });
-
-  it.each([true, false])('la modificación acepta pdfVisible %s', async (pdfVisible) => {
-    expect((await check(UpdateMovimientoDto, { pdfVisible })).messages).toEqual([]);
+  it('el PDF no tiene visibilidad propia: pdfVisible no está permitido (RF-17)', async () => {
+    expect((await check(CreateMovimientoDto, { ...MINIMAL, pdfVisible: true })).messages).toEqual([
+      'El campo pdfVisible no está permitido',
+    ]);
+    expect((await check(UpdateMovimientoDto, { pdfVisible: true })).messages).toEqual([
+      'El campo pdfVisible no está permitido',
+    ]);
   });
 
   it('la modificación acepta quitarPdf: true', async () => {
@@ -36,19 +33,6 @@ describe('DTO de movimientos con PDF', () => {
 
     expect(messages).toEqual([]);
     expect(instance.quitarPdf).toBe(true);
-  });
-
-  it.each([
-    ['como texto', 'si'],
-    ['como número', 1],
-    ['null', null],
-  ])('rechaza pdfVisible %s', async (_caso, pdfVisible) => {
-    expect((await check(CreateMovimientoDto, { ...MINIMAL, pdfVisible })).messages).toEqual([
-      MOVIMIENTO_MESSAGES.pdfVisible,
-    ]);
-    expect((await check(UpdateMovimientoDto, { pdfVisible })).messages).toEqual([
-      MOVIMIENTO_MESSAGES.pdfVisible,
-    ]);
   });
 
   it.each([
@@ -77,7 +61,7 @@ describe('DTO de movimientos con PDF', () => {
 
   it('ningún mensaje repite el valor recibido (RNF de registros)', async () => {
     const mark = 'MARCA-QUE-NO-SE-REPITE';
-    const { messages } = await check(UpdateMovimientoDto, { pdfVisible: mark, quitarPdf: mark });
+    const { messages } = await check(UpdateMovimientoDto, { visible: mark, quitarPdf: mark });
 
     expect(messages).toHaveLength(2);
     for (const message of messages) expect(message).not.toContain(mark);

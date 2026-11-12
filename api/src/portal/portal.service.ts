@@ -109,7 +109,7 @@ export class PortalService {
   /**
    * El PDF de un movimiento, si el cliente puede verlo (spec 010, RF-33). En cualquier otro caso
    * (causa ajena, inexistente o desactivada, movimiento oculto, anulado, inexistente o de otra
-   * causa, sin PDF o con el PDF oculto) responde siempre el mismo 404 (RF-37).
+   * causa, o sin PDF) responde siempre el mismo 404 (RF-37).
    */
   async getPdf(
     clienteId: number,

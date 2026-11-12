@@ -43,7 +43,7 @@ export function HistorialMovimientos({
 
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_MOVEMENT_FORM);
-  const [pdf, setPdf] = useState(() => initialPdfState(null));
+  const [pdf, setPdf] = useState(() => initialPdfState(false));
   const [apiProblems, setApiProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
 
@@ -72,7 +72,7 @@ export function HistorialMovimientos({
 
   function startCreating() {
     setForm(EMPTY_MOVEMENT_FORM);
-    setPdf(initialPdfState(null));
+    setPdf(initialPdfState(false));
     setApiProblems([]);
     setCreating(true);
   }
@@ -82,7 +82,7 @@ export function HistorialMovimientos({
     setEnviando(true);
     setApiProblems([]);
     try {
-      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: true });
+      const { archivo, datos } = pdfChanges(pdf);
       const data = { ...buildCreateMovementData(form), ...datos };
       await (archivo
         ? movimientos.createMovement(causaId, data, archivo)

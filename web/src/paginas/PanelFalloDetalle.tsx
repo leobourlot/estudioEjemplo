@@ -79,7 +79,7 @@ export function PanelFalloDetalle() {
   } | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [pdf, setPdf] = useState(() => initialPdfState(null));
+  const [pdf, setPdf] = useState(() => initialPdfState(false));
 
   useEffect(() => {
     let active = true;
@@ -115,7 +115,7 @@ export function PanelFalloDetalle() {
 
   function startEditing(current: FalloDetalle) {
     setForm(rulingFormFrom(current));
-    setPdf(initialPdfState(current.pdf ? { visible: false } : null));
+    setPdf(initialPdfState(current.pdf !== null));
     setProblems([]);
     setQuestion(null);
     setEditing(true);
@@ -131,7 +131,7 @@ export function PanelFalloDetalle() {
     setProblems([]);
     setQuestion(null);
     try {
-      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: false });
+      const { archivo, datos } = pdfChanges(pdf);
       const changes = {
         ...buildUpdateRulingData(values, current),
         ...datos,

@@ -7,7 +7,6 @@ import {
   fechaRule,
   MOVIMIENTO_MESSAGES,
   movementText,
-  pdfVisibleRule,
   TEXTO_CLIENTE_LABEL,
   tipoRule,
   toMovementText,
@@ -36,13 +35,9 @@ export class UpdateMovimientoDto {
   @Rule(movementText(TEXTO_CLIENTE_LABEL))
   textoCliente?: string | null;
 
+  // También decide si el cliente ve el PDF: el PDF no tiene visibilidad propia (spec 010, RF-17).
   @Rule(optional(visibleRule))
   visible?: boolean;
-
-  // Con un archivo, la visibilidad del PDF nuevo, que sin ella nace oculto; sin archivo, la del
-  // PDF guardado (spec 010, RF-16, RF-17). Sin ningún PDF, el service lo rechaza (RF-15).
-  @Rule(optional(pdfVisibleRule))
-  pdfVisible?: boolean;
 
   // Quita el PDF guardado (spec 010, RF-14). No se combina con un archivo nuevo.
   @Rule(optional(quitarPdfRule))

@@ -49,8 +49,8 @@ export function FiltrosJurisprudencia({
     <div className="space-y-3">
       <ListaDeErrores messages={problems} />
       <div className="flex flex-wrap items-end gap-4">
-        <form onSubmit={handleSearch} className="flex items-end gap-2">
-          <div>
+        <form onSubmit={handleSearch} className="flex w-full items-end gap-2 sm:w-auto">
+          <div className="min-w-0 flex-1">
             <label htmlFor="buscarFallos" className={labelClass}>
               Buscar
             </label>
@@ -60,7 +60,7 @@ export function FiltrosJurisprudencia({
               placeholder="Carátula, tribunal, número, sumario o palabra clave"
               value={draft.buscar}
               onChange={(event) => setDraft({ ...draft, buscar: event.target.value })}
-              className={`w-80 ${fieldClass}`}
+              className={`w-full sm:w-80 ${fieldClass}`}
             />
           </div>
           <button type="submit" className={SECONDARY_BUTTON_SMALL}>

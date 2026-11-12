@@ -46,24 +46,25 @@ export interface MovimientoResumen {
   esFechaFutura: boolean;
   creadoPor: AutorResumen;
   creadoEn: string;
-  /** Si tiene PDF y si es visible para el cliente; null si no tiene (spec 010, RF-30). */
-  pdf: { visible: boolean } | null;
+  /** Si tiene PDF (spec 010, RF-30). El cliente lo ve si ve el movimiento (RF-33). */
+  tienePdf: boolean;
 }
 
 /** El PDF en la consulta de un movimiento (spec 010, RF-31). `subidoEn` es ISO. */
 export interface PdfDetalle {
   codigo: string;
   tamano: number;
-  visible: boolean;
   subidoPor: AutorResumen;
   subidoEn: string;
 }
 
-/** El PDF como lo registra el historial de cambios (spec 010, RF-21). */
+/**
+ * El PDF como lo registra el historial de cambios (spec 010, RF-21). Los cambios anteriores a que
+ * el PDF dejara de tener visibilidad propia traen además `visible`, que no se muestra.
+ */
 export interface PdfCambio {
   codigo: string;
   tamano: number;
-  visible: boolean;
 }
 
 export interface CambioCampo {
@@ -80,7 +81,7 @@ export interface CambioMovimiento {
   cambios: CambioCampo[];
 }
 
-export interface MovimientoDetalle extends Omit<MovimientoResumen, 'pdf'> {
+export interface MovimientoDetalle extends MovimientoResumen {
   pdf: PdfDetalle | null;
   causaId: number;
   causaActiva: boolean;
@@ -117,8 +118,6 @@ export interface CreateMovimientoData {
   descripcion: string;
   textoCliente?: string | null;
   visible?: boolean;
-  /** Solo con un archivo: sin ella, el PDF nace oculto (spec 010, RF-16). */
-  pdfVisible?: boolean;
 }
 
 /** Solo los datos que cambian; null borra el texto para el cliente. */
@@ -128,8 +127,6 @@ export interface UpdateMovimientoData {
   descripcion?: string;
   textoCliente?: string | null;
   visible?: boolean;
-  /** La visibilidad del PDF nuevo o del guardado (spec 010, RF-16, RF-17). */
-  pdfVisible?: boolean;
   /** Quita el PDF guardado (spec 010, RF-14). */
   quitarPdf?: true;
 }

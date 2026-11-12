@@ -7,13 +7,14 @@ describe('el PDF en el historial de cambios', () => {
     expect(campoLabel('pdf')).toBe('PDF');
   });
 
-  it('muestra el código, el tamaño y la visibilidad', () => {
-    expect(formatChangeValue('pdf', { codigo: 'K7Q2MX', tamano: 850_000, visible: false })).toBe(
-      'K7Q2MX, 830 KB, oculto para el cliente',
-    );
-    expect(formatChangeValue('pdf', { codigo: 'P4N8RC', tamano: 2_300_000, visible: true })).toBe(
-      'P4N8RC, 2 MB, visible para el cliente',
-    );
+  it('muestra el tamaño, sin el código', () => {
+    expect(formatChangeValue('pdf', { codigo: 'K7Q2MX', tamano: 850_000 })).toBe('830 KB');
+    expect(formatChangeValue('pdf', { codigo: 'P4N8RC', tamano: 2_300_000 })).toBe('2 MB');
+  });
+
+  it('ignora la visibilidad que traen los cambios registrados antes de que el PDF dejara de tenerla (RF-17)', () => {
+    const anterior = { codigo: 'K7Q2MX', tamano: 850_000, visible: false } as const;
+    expect(formatChangeValue('pdf', anterior)).toBe('830 KB');
   });
 
   it('sin PDF muestra "Sin PDF"', () => {

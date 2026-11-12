@@ -82,7 +82,7 @@ describe('PDF: integridad, acceso y encabezados', () => {
       await request(app.getHttpServer())
         .post(`/api/panel/causas/${causaId}/movimientos`)
         .set('Cookie', `access_token=${lawyerToken}`)
-        .field('datos', JSON.stringify({ ...JSON.parse(DATOS), visible: true, pdfVisible: true }))
+        .field('datos', JSON.stringify({ ...JSON.parse(DATOS), visible: true }))
         .attach('pdf', minimalPdf(), 'r.pdf')
         .expect(201)
     ).body.id;

@@ -9,7 +9,7 @@ import { DataSource } from 'typeorm';
 export async function clearPdfTables(app: NestExpressApplication): Promise<void> {
   const queryRunner = app.get(DataSource).createQueryRunner();
   try {
-    await queryRunner.query('UPDATE movimientos SET pdfId = NULL, pdfVisible = 0');
+    await queryRunner.query('UPDATE movimientos SET pdfId = NULL');
     await queryRunner.query('UPDATE fallos SET pdfId = NULL');
     await queryRunner.query('DELETE FROM pdfs');
   } finally {

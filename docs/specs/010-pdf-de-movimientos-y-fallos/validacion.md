@@ -104,3 +104,23 @@ La spec está cumplida: cada RF y cada requisito no funcional tiene sus tests en
 - Verificar `max_allowed_packet` en la base de producción y en la de la demo: al menos 16 MB (README, "Desarrollo").
 - Verificar que el proxy de Easypanel no guarde respuestas con PDF: las respuestas llevan `Cache-Control: no-store, private`, pero conviene confirmar que ninguna capa intermedia lo ignore.
 - La migración `CrearPdfs1794182400000` se aplica a mano, como las anteriores: `npx typeorm migration:run -d dist/base-de-datos/data-source.js` desde la consola del servicio de la api.
+
+### Ajustes después del despliegue (11/11/2026)
+
+Observaciones del usuario al probar en el celular:
+
+- **El PDF en el historial de cambios** (spec, RF-21 y casos límite): cada valor muestra solo el tamaño y la visibilidad, por ejemplo "17 KB · Oculto para el cliente", o "Sin PDF". El código se sigue registrando, pero no se muestra. Un reemplazo por un PDF del mismo tamaño y la misma visibilidad queda registrado con quién y cuándo, aunque los dos valores se vean iguales. Tests: `web/src/servicios/presentacion-movimientos-pdf.test.ts` y `web/src/componentes/FilaMovimientoPdf.test.tsx`.
+- **El botón "Buscar" fuera de lugar en el celular** (specs 003 y 008, ancho de 360 px sin desplazamiento horizontal): en los filtros de movimientos, de jurisprudencia y de modelos, el campo de búsqueda ocupa el ancho disponible y "Buscar" queda a su lado; desde el ancho `sm` se ven como antes.
+
+`pnpm test` (web) y `pnpm lint` pasan.
+
+### La visibilidad del PDF sigue a la del movimiento (12/11/2026)
+
+Pedido del usuario: quitar la casilla "PDF visible para el cliente" y que el cliente vea el PDF de un movimiento si y solo si ve el movimiento.
+
+- **Spec:** RF-10, RF-15 a RF-23, RF-30 a RF-38, RF-42, RNF de privacidad y de accesibilidad, casos límite, fuera de alcance y criterios de finalización. El plan lleva una nota al principio.
+- **Base:** la migración `QuitarVisibilidadDelPdf1794441600000` quita `movimientos.pdfVisible`. Su `down` la vuelve a crear, marcada en el PDF de cada movimiento visible, para que el cliente siga viendo lo mismo. Test: `api/test/migracion-visibilidad-pdf.e2e-spec.ts`.
+- **Api:** los DTO ya no aceptan `pdfVisible` ("El campo pdfVisible no está permitido"); el portal entrega el PDF de todo movimiento que el cliente puede ver; el resumen del historial informa `tienePdf`; el historial de cambios registra el PDF como `{ codigo, tamano }`. Los datos de muestra dejan de marcar el PDF.
+- **Web:** sin casilla de visibilidad del PDF; la fila muestra la leyenda "PDF"; el historial de cambios muestra solo el tamaño, también en los cambios viejos que guardan la visibilidad; los avisos de RF-18 son "El cliente también podrá ver y descargar el PDF" (el movimiento pasa a visible con PDF) y "El cliente podrá ver y descargar este PDF" (PDF nuevo en un movimiento visible); restaurar un movimiento visible con PDF pide confirmación.
+
+Antes de aplicar la migración en producción y en la demo: un movimiento visible cuyo PDF estaba oculto pasa a mostrar el PDF al cliente. Para revisarlos antes de migrar: `SELECT id, causaId FROM movimientos WHERE visible = 1 AND anulado = 0 AND pdfId IS NOT NULL AND pdfVisible = 0`. La migración se aplica a mano, como las anteriores.

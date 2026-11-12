@@ -33,15 +33,14 @@ export interface MovimientoResumen {
   esFechaFutura: boolean;
   creadoPor: AutorResumen;
   creadoEn: Date;
-  /** Si tiene PDF y si es visible para el cliente; null si no tiene (spec 010, RF-30). */
-  pdf: { visible: boolean } | null;
+  /** Si tiene PDF (spec 010, RF-30). El cliente lo ve si ve el movimiento (RF-33). */
+  tienePdf: boolean;
 }
 
 /** El PDF en la consulta de un movimiento (spec 010, RF-31, RF-40). Nunca su contenido. */
 export interface PdfDetalle {
   codigo: string;
   tamano: number;
-  visible: boolean;
   subidoPor: AutorResumen;
   subidoEn: Date;
 }
@@ -56,7 +55,7 @@ export interface CambioMovimientoDetalle {
 }
 
 /** Consulta de un movimiento (RF-22). */
-export interface MovimientoDetalle extends Omit<MovimientoResumen, 'pdf'> {
+export interface MovimientoDetalle extends MovimientoResumen {
   pdf: PdfDetalle | null;
   causaId: number;
   /** Permite a la interfaz ocultar las acciones en una causa desactivada (RF-28). */
@@ -82,8 +81,8 @@ export interface MovimientoCliente {
   /** Fecha posterior al día actual en Buenos Aires (spec 004, RF-21). */
   esFechaFutura: boolean;
   /**
-   * Si tiene un PDF que el cliente puede ver (spec 010, RF-33, RF-35). Nada más del PDF: ni su
-   * tamaño, ni su código, ni quién lo subió. Un PDF oculto no deja ningún indicio.
+   * Si tiene PDF: el cliente lo ve porque ve el movimiento (spec 010, RF-33, RF-35). Nada más del
+   * PDF: ni su tamaño, ni su código, ni quién lo subió.
    */
   tienePdf: boolean;
 }
@@ -113,7 +112,7 @@ export function toMovimientoResumen(
     esFechaFutura: isFutureDate(movimiento.fecha, ahora),
     creadoPor: toAutorResumen(movimiento.creadoPor),
     creadoEn: movimiento.creadoEn,
-    pdf: movimiento.pdfId === null ? null : { visible: movimiento.pdfVisible },
+    tienePdf: movimiento.pdfId !== null,
   };
 }
 
@@ -140,7 +139,6 @@ export function toMovimientoDetalle(
       ? {
           codigo: movimiento.pdf.codigo,
           tamano: movimiento.pdf.tamano,
-          visible: movimiento.pdfVisible,
           subidoPor: toAutorResumen(movimiento.pdf.subidoPor),
           subidoEn: movimiento.pdf.subidoEn,
         }
@@ -167,6 +165,6 @@ export function toMovimientoCliente(
     tipo: movimiento.tipo,
     texto: visibleText(movimiento).texto,
     esFechaFutura: isFutureDate(movimiento.fecha, ahora),
-    tienePdf: movimiento.pdfId !== null && movimiento.pdfVisible,
+    tienePdf: movimiento.pdfId !== null,
   };
 }

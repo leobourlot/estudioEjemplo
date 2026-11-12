@@ -21,7 +21,7 @@ export function PanelFalloNuevo() {
   const navigate = useNavigate();
   const notifyTyping = useMantenerSesion();
   const [form, setForm] = useState(EMPTY_RULING_FORM);
-  const [pdf, setPdf] = useState(() => initialPdfState(null));
+  const [pdf, setPdf] = useState(() => initialPdfState(false));
   const [question, setQuestion] = useState<PendingQuestion | null>(null);
   const [apiProblems, setApiProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -35,7 +35,7 @@ export function PanelFalloNuevo() {
     setApiProblems([]);
     setQuestion(null);
     try {
-      const { archivo, datos } = pdfChanges(pdf, { conVisibilidad: false });
+      const { archivo, datos } = pdfChanges(pdf);
       const data = {
         ...buildCreateRulingData(form),
         ...datos,

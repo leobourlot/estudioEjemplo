@@ -108,8 +108,7 @@ export function FormularioMovimiento({
     ? pdfVisibilityNotice({
         movimientoAntes: original?.visible ?? false,
         movimientoDespues: value.visible,
-        pdfVisibleAntes: original?.pdf?.visible ?? false,
-        pdfVisibleDespues: hasPdf(pdf) && pdf.visible,
+        tienePdf: hasPdf(pdf),
         pdfNuevo: pdf.archivo !== null,
       })
     : null;
@@ -218,7 +217,7 @@ export function FormularioMovimiento({
       )}
 
       {pdf && onPdfChange && (
-        <CampoPdf estado={pdf} onChange={onPdfChange} conVisibilidad guardado={pdfGuardado} />
+        <CampoPdf estado={pdf} onChange={onPdfChange} guardado={pdfGuardado} />
       )}
 
       {pdfNotice && pdfNotice !== PDF_NOTICES.alsoPdf && (

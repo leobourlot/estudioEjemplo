@@ -24,15 +24,14 @@ describe('PDF de los movimientos en el portal', () => {
 
   /** Carga un movimiento por el panel, con o sin PDF, y devuelve su id. */
   async function createMovement(
-    opciones: { causa?: number; visible?: boolean; pdf?: Buffer | null; pdfVisible?: boolean } = {},
+    opciones: { causa?: number; visible?: boolean; pdf?: Buffer | null } = {},
   ): Promise<number> {
-    const { causa = causaId, visible = true, pdf = minimalPdf(), pdfVisible = true } = opciones;
+    const { causa = causaId, visible = true, pdf = minimalPdf() } = opciones;
     const datos = {
       fecha: '2024-03-01',
       tipo: 'resolucion',
       descripcion: 'Se dicta resolución.',
       visible,
-      ...(pdf ? { pdfVisible } : {}),
     };
     const pedido = request(app.getHttpServer())
       .post(`/api/panel/causas/${causa}/movimientos`)
@@ -86,7 +85,7 @@ describe('PDF de los movimientos en el portal', () => {
     await app?.close();
   });
 
-  it('el cliente descarga el PDF visible de un movimiento visible de su causa', async () => {
+  it('el cliente descarga el PDF de un movimiento visible de su causa (RF-33)', async () => {
     const id = await createMovement({ pdf: signedPdf() });
 
     const response = await download(id).expect(200);
@@ -98,7 +97,7 @@ describe('PDF de los movimientos en el portal', () => {
   });
 
   it('todos los casos sin permiso responden exactamente lo mismo (RF-37)', async () => {
-    const pdfOculto = await createMovement({ pdfVisible: false });
+    const conPdf = await createMovement();
     const movimientoOculto = await createMovement({ visible: false });
     const anulado = await createMovement();
     await panelPost(`/api/panel/causas/${causaId}/movimientos/${anulado}/anular`);
@@ -106,16 +105,15 @@ describe('PDF de los movimientos en el portal', () => {
     const deAjena = await createMovement({ causa: ajenaId });
 
     const casos = [
-      await result(pdfOculto),
       await result(movimientoOculto),
       await result(anulado),
       await result(sinPdf),
       await result(999_999),
       await result(deAjena),
       await result(deAjena, ajenaId),
-      await result(pdfOculto, 999_999),
+      await result(conPdf, 999_999),
       await result('abc'),
-      await result(pdfOculto, 'abc'),
+      await result(conPdf, 'abc'),
     ];
 
     expect(casos[0].status).toBe(404);
@@ -146,19 +144,19 @@ describe('PDF de los movimientos en el portal', () => {
     await download(id).expect(200);
   });
 
-  it('tienePdf solo con el PDF visible, y el portal no dice nada más del PDF (RF-34, RF-35)', async () => {
-    const visible = await createMovement();
-    const oculto = await createMovement({ pdfVisible: false });
+  it('tienePdf en cada movimiento visible con PDF, y el portal no dice nada más del PDF (RF-34, RF-35)', async () => {
+    const conPdf = await createMovement();
+    const sinPdf = await createMovement({ pdf: null });
 
     const lista = await portalGet(`/${causaId}/movimientos`).expect(200);
     const porId = new Map(
       (lista.body.items as { id: number; tienePdf: boolean }[]).map((i) => [i.id, i.tienePdf]),
     );
-    expect(porId.get(visible)).toBe(true);
-    expect(porId.get(oculto)).toBe(false);
+    expect(porId.get(conPdf)).toBe(true);
+    expect(porId.get(sinPdf)).toBe(false);
 
-    const detalle = await portalGet(`/${causaId}/movimientos/${oculto}`).expect(200);
-    expect(detalle.body.tienePdf).toBe(false);
+    const detalle = await portalGet(`/${causaId}/movimientos/${conPdf}`).expect(200);
+    expect(detalle.body.tienePdf).toBe(true);
 
     for (const body of [lista.body, detalle.body]) {
       expect(JSON.stringify(body)).not.toMatch(/tamano|codigo|subido|pdfId|pdfVisible/);

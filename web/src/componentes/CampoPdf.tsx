@@ -7,8 +7,6 @@ import {
   type PdfFormState,
   rejectPdf,
   removePdf,
-  setPdfVisible,
-  showsVisibilityOption,
 } from '../servicios/formulario-pdf';
 import type { AutorResumen } from '../servicios/movimientos';
 import { formatDateTime } from '../servicios/presentacion';
@@ -25,8 +23,6 @@ export interface PdfGuardadoInfo {
 interface CampoPdfProps {
   estado: PdfFormState;
   onChange: (estado: PdfFormState) => void;
-  /** Movimientos sí; fallos no, que nunca llegan al cliente (RF-27). */
-  conVisibilidad: boolean;
   guardado?: PdfGuardadoInfo | null;
 }
 
@@ -35,7 +31,7 @@ interface CampoPdfProps {
  * el archivo elegido antes de enviarlo, con los mensajes de la api, y lo descarta si no sirve
  * (RF-11). No muestra el nombre del archivo (RF-8). Las reglas viven en formulario-pdf.ts.
  */
-export function CampoPdf({ estado, onChange, conVisibilidad, guardado = null }: CampoPdfProps) {
+export function CampoPdf({ estado, onChange, guardado = null }: CampoPdfProps) {
   const id = useId();
   // Cambiar la clave vacía el input, así se puede volver a elegir el mismo archivo.
   const [inputKey, setInputKey] = useState(0);
@@ -97,16 +93,6 @@ export function CampoPdf({ estado, onChange, conVisibilidad, guardado = null }: 
             Descartar
           </button>
         </div>
-      )}
-      {conVisibilidad && showsVisibilityOption(estado) && (
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={estado.visible}
-            onChange={(event) => onChange(setPdfVisible(estado, event.target.checked))}
-          />
-          PDF visible para el cliente
-        </label>
       )}
       {hasPdf(estado) && (
         <button type="button" onClick={handleRemove} className={SECONDARY_BUTTON_SMALL}>

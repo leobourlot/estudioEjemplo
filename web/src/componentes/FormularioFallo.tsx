@@ -219,7 +219,7 @@ export function FormularioFallo({
 
       {/* El PDF de un fallo nunca llega al cliente: sin casilla de visibilidad (RF-27). */}
       {pdf && onPdfChange && (
-        <CampoPdf estado={pdf} onChange={onPdfChange} conVisibilidad={false} guardado={pdfGuardado} />
+        <CampoPdf estado={pdf} onChange={onPdfChange} guardado={pdfGuardado} />
       )}
 
       {confirmando && (

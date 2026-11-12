@@ -1,5 +1,7 @@
 # Plan 010 — PDF de movimientos y fallos
 
+> **Cambio del 12/11/2026 (spec 010, RF-15 a RF-18, RF-33):** el PDF de un movimiento dejó de tener visibilidad propia. La migración `QuitarVisibilidadDelPdf1794441600000` quita `movimientos.pdfVisible`; los DTO ya no aceptan `pdfVisible` (se rechaza como campo desconocido); el resumen del historial informa `tienePdf` en lugar de `pdf: { visible }`; el historial de cambios registra el PDF como `{ codigo, tamano }`; y `findVisiblePdf` y `tienePdf` del portal solo exigen que el cliente pueda ver el movimiento y que este tenga PDF. Lo que este plan dice de `pdfVisible` describe el diseño anterior.
+
 Implementa `spec.md` de esta carpeta. Respeta `docs/constitution.md` y se apoya en lo construido en las specs anteriores: guards globales y roles (001), bloqueos y transacciones de movimientos (003), regla de visibilidad para el cliente (003 y 004), aviso de fallo repetido con `confirmarRepetido` (005), modo demo y restablecimiento (009). Cada sección indica entre corchetes los RF que cubre.
 
 No se agregan dependencias ni variables de entorno (ver "Dependencias nuevas").
