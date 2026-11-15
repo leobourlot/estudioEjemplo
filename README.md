@@ -111,6 +111,7 @@ pnpm format         # Prettier
 ```
 
 - Las variables de entorno se documentan en `web/.env.example` y `api/.env.example`. Los archivos `.env` reales no se versionan.
+- `api/.env` y `api/.env.test` necesitan `PLAN=premium` (spec 011). Sin `PLAN`, la api y los tests no arrancan: no hay plan por defecto. `ESPACIO_PDF_GB` es opcional (10 si falta). Los tests del plan Básico lo indican desde el propio test, así que `.env.test` queda siempre en `premium`.
 - El esquema de la base cambia solo mediante migraciones de TypeORM. `synchronize` siempre está en `false`.
 - Una tarea está terminada solo si `pnpm test` y `pnpm lint` pasan sin errores.
 - Los PDF de movimientos y fallos se guardan en la base (spec 010). Un PDF de 5 MB viaja hacia MySQL como un texto de unos 10,5 MB, así que cada base (desarrollo, tests, demo y producción) tiene que aceptar paquetes de al menos 16 MB. En MySQL 8 el valor por defecto es 64 MB. Para verificarlo: `SHOW VARIABLES LIKE 'max_allowed_packet';`.
@@ -140,9 +141,41 @@ Para pasar a otro estudio:
 
 La estructura del sitio (cuatro servicios y Derecho Laboral con las pestañas Empresas y Trabajadores) es fija: el archivo de marca cambia sus textos, no su cantidad ni sus direcciones.
 
+## Planes
+
+Cada publicación funciona con uno de dos planes (spec 011), que se indica en la variable `PLAN` de la api. El estudio no puede cambiarlo desde el sistema.
+
+| | Básico | Premium |
+|---|---|---|
+| Cuentas, causas, partes, movimientos con su historial, portal del cliente, modelos de escritos y sitio público | Sí | Sí |
+| Integrantes del estudio habilitados (administradores y abogados juntos) | Hasta 2 | Sin límite |
+| Clientes | Sin límite | Sin límite |
+| Jurisprudencia | No: el menú la muestra con la etiqueta "Premium" y un aviso | Sí |
+| PDF de movimientos y fallos | No: el formulario muestra un aviso y el cliente no ve nada | Sí, hasta 10 GB en total |
+
+### Cambiar de plan
+
+1. En Easypanel, en el servicio de la api, cambiar `PLAN` a `basico` o `premium` (en minúsculas).
+2. Volver a desplegar la api: el contenedor que está corriendo no ve las variables nuevas hasta el próximo despliegue. La web no se vuelve a construir: le pregunta el plan a la api.
+
+Cambiar de plan nunca borra datos. Con el plan Básico, la jurisprudencia y los PDF quedan guardados y vuelven a verse al volver al Premium.
+
+### Integrantes al pasar al plan Básico
+
+Al arrancar con el plan Básico, si hay más de 2 integrantes activos, quedan habilitados el administrador principal y el integrante con la cuenta más antigua. Los demás quedan **fuera del plan**: no pueden ingresar y figuran con ese estado en Cuentas. Un administrador elige a quién habilitar: desactiva a uno y usa "Habilitar en el plan" en otro. Desactivar a alguien no habilita a nadie solo. Al volver al plan Premium, todos los integrantes activos vuelven a ingresar.
+
+### Espacio para PDF
+
+Con el plan Premium, los PDF ocupan hasta 10 GB en total en la base del estudio. Desde el 90 %, el panel avisa, y al completarse rechaza los PDF nuevos. Para dar más espacio, `ESPACIO_PDF_GB` en el servicio de la api (GB enteros, de 1 a 1.000) y volver a desplegar. Antes, verificar que el disco del VPS y las copias de seguridad tienen lugar: el espacio vive en el MySQL compartido.
+
+### Publicar esta versión en una publicación existente
+
+1. Agregar `PLAN` en las variables del servicio de la api, antes de desplegar. Sin ella, la api no arranca.
+2. Desplegar y correr la migración desde la consola del servicio: `npx typeorm migration:run -d dist/base-de-datos/data-source.js`. Mientras no se corra, la api arranca, pero el ingreso y el panel responden "El sistema se está actualizando. Probá de nuevo en unos minutos". Cuando termina, funciona sin volver a desplegar.
+
 ## Modo demo
 
-El mismo código sirve para la demo y para el sitio de un estudio real. El modo demo está apagado por defecto (spec 009). Encendido:
+El mismo código sirve para la demo y para el sitio de un estudio real. El modo demo está apagado por defecto (spec 009). La demo lleva `PLAN=premium`, para mostrar todas las funcionalidades: con `MODO_DEMO=true` y el plan Básico, la api no arranca (spec 011). Encendido:
 
 - La pantalla de ingreso muestra tres cuentas de prueba de los datos de muestra (la administradora, el abogado y la cliente, con la contraseña `Muestra2026`), con un botón que completa el formulario.
 - La api no deja modificar esas tres cuentas: ni su contraseña, ni sus datos, ni desactivarlas.
@@ -153,7 +186,7 @@ El mismo código sirve para la demo y para el sitio de un estudio real. El modo 
 ### Encenderlo
 
 - **Web:** construir con `VITE_MODO_DEMO=true`. Las variables `VITE_*` quedan escritas en el JavaScript al construir, así que van en `web/.env.production` (que Vite lee solo al construir, no en `pnpm dev`), junto con `VITE_API_URL` y `VITE_URL_SITIO`, o en las variables de la construcción de Hostinger si construye desde el repositorio. Después de cambiarlas, hay que volver a construir y subir `web/dist`.
-- **API:** `MODO_DEMO=true` en las variables del servicio de Easypanel, y volver a desplegar: el contenedor que está corriendo no ve las variables nuevas hasta el próximo despliegue. `printenv MODO_DEMO`, en la consola del servicio, muestra lo que ve.
+- **API:** `MODO_DEMO=true` y `PLAN=premium` en las variables del servicio de Easypanel, y volver a desplegar: el contenedor que está corriendo no ve las variables nuevas hasta el próximo despliegue. `printenv MODO_DEMO`, en la consola del servicio, muestra lo que ve.
 
 Cualquier otro valor, o la variable ausente, lo deja apagado. Un estudio real nunca lleva ninguna de las dos.
 
