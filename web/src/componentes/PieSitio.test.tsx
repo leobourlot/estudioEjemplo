@@ -5,6 +5,7 @@ import { COLORES_REDES, CONTORNO } from './IconosRedes';
 import { PieSitio } from './PieSitio';
 import { MARCA } from '../servicios/marca';
 import { CONTACTO_DE_PRUEBA } from '../pruebas/contacto-de-prueba';
+import { BOURDER_WEB } from '../servicios/bourder-web';
 
 const MESSAGE = 'Hola, me contacto desde el sitio web del estudio.';
 
@@ -107,7 +108,9 @@ describe('PieSitio (spec 007, RF-44)', () => {
     render(<PieSitio mensaje={MESSAGE} anio={2026} />);
 
     const link = footer().getByRole('link', { name: 'Bourder Web' });
-    expect(link.getAttribute('href')).toBe('https://bourderweb.com.ar');
+    // Del archivo de Bourder Web (spec 011, RF-34).
+    expect(link.getAttribute('href')).toBe(BOURDER_WEB.sitioUrl);
+    expect(BOURDER_WEB.sitioUrl).toBe('https://bourderweb.com.ar');
     expect(link.querySelector('img')!.getAttribute('src')).toBe('/diseno/bourder-web.svg');
     expect(link.parentElement!.textContent).toBe('Diseñado por Bourder Web');
   });

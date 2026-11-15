@@ -14,6 +14,8 @@ import type {
 import type { SessionService } from '../servicios/sesion';
 import { fakeSessionService, fakeUsersService } from './aplicacion-de-prueba';
 import { fakePortalService } from './portal-de-prueba';
+import type { PlanService } from '../servicios/plan';
+import { fakePlanService } from './plan-de-prueba';
 
 /** Fallo de prueba como lo devuelve el listado. */
 export function testFalloResumen(overrides: Partial<FalloResumen> = {}): FalloResumen {
@@ -90,11 +92,17 @@ export function renderRulingsApp(
   path: string,
   session: SessionService = fakeSessionService(),
   jurisprudencia: JurisprudenciaService = fakeJurisprudenciaService(),
+  plan: PlanService = fakePlanService(),
 ) {
   const result = render(
     <MemoryRouter initialEntries={[path]}>
       <ProveedorServicios
-        services={{ users: fakeUsersService(), portal: fakePortalService(), jurisprudencia }}
+        services={{
+          users: fakeUsersService(),
+          portal: fakePortalService(),
+          jurisprudencia,
+          plan,
+        }}
       >
         <ProveedorSesion service={session}>
           <RutasAplicacion />

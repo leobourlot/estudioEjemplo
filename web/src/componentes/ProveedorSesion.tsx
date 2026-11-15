@@ -7,7 +7,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { httpClient } from '../servicios/cliente-http';
+import { httpClient, type SessionClosedListener } from '../servicios/cliente-http';
+import { PLAN_TEXTS } from '../servicios/plan';
 import { IDLE_CHECK_INTERVAL_MS, IDLE_NOTICE, isIdleExpired } from '../servicios/inactividad';
 import { type SessionService, sessionService, type UsuarioPropio } from '../servicios/sesion';
 
@@ -38,7 +39,7 @@ const reloadPage = () => window.location.reload();
 interface ProveedorSesionProps {
   children: ReactNode;
   service?: SessionService;
-  subscribeSessionClosed?: (listener: () => void) => () => void;
+  subscribeSessionClosed?: (listener: SessionClosedListener) => () => void;
   /** Avisa cada pedido enviado a la API, para medir la inactividad del cliente. */
   subscribeActivity?: (listener: () => void) => () => void;
   /** Recarga la aplicación; los tests la reemplazan. */
@@ -76,8 +77,6 @@ export function ProveedorSesion({
       active = false;
     };
   }, [service]);
-
-  useEffect(() => subscribeSessionClosed(() => setUsuario(null)), [subscribeSessionClosed]);
 
   // Si el navegador muestra la página desde su caché de ida y vuelta (el botón "atrás"), puede
   // traer datos de una sesión ya cerrada: se recarga y se vuelve a preguntar a la API quién es
@@ -123,6 +122,17 @@ export function ProveedorSesion({
   }, []);
 
   const clearNotice = useCallback(() => setNotice(null), []);
+
+  // Si la api cerró la sesión, el usuario pasa a null. Si la cerró porque la cuenta quedó fuera
+  // del plan, la pantalla de ingreso lo dice con T-6 (spec 011, RF-21).
+  useEffect(
+    () =>
+      subscribeSessionClosed((message) => {
+        if (message === PLAN_TEXTS.outsidePlanLogin) endSession(message);
+        else setUsuario(null);
+      }),
+    [subscribeSessionClosed, endSession],
+  );
 
   // Inactividad del cliente (plan 004, "Inactividad en la pantalla"). Se compara con la hora,
   // no se cuenta con el temporizador, porque los temporizadores se frenan con la computadora

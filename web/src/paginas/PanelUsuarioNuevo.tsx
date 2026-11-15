@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CampoTexto } from '../componentes/CampoTexto';
 import { ListaDeErrores } from '../componentes/ListaDeErrores';
+import { usePlan } from '../componentes/ProveedorPlan';
 import { useSession } from '../componentes/ProveedorSesion';
 import { useUsersService } from '../componentes/ProveedorServicios';
 import { ApiError, errorMessage } from '../servicios/cliente-http';
@@ -10,7 +11,9 @@ import {
   EMPTY_ACCOUNT_FORM,
   type NewAccountForm,
   validateNewAccount,
+  unavailableRoles,
 } from '../servicios/formulario-cuenta';
+import { PLAN_TEXTS } from '../servicios/plan';
 import type { Rol, TipoPersona } from '../servicios/sesion';
 import {
   CARD,
@@ -39,9 +42,16 @@ export function PanelUsuarioNuevo() {
   const users = useUsersService();
   const { usuario } = useSession();
   const navigate = useNavigate();
-  const [form, setForm] = useState<NewAccountForm>(EMPTY_ACCOUNT_FORM);
+  const [rawForm, setForm] = useState<NewAccountForm>(EMPTY_ACCOUNT_FORM);
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
+  // Spec 011, RF-19: con el plan Básico y 2 integrantes habilitados, solo se crean clientes.
+  const unavailable = unavailableRoles(usePlan().info);
+  const staffFull = unavailable.length > 0;
+  // Un rol que dejó de estar disponible pasa a cliente, el rol inicial.
+  const form: NewAccountForm = unavailable.includes(rawForm.rol)
+    ? { ...rawForm, rol: 'cliente' }
+    : rawForm;
 
   const set = (field: keyof NewAccountForm) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -85,14 +95,20 @@ export function PanelUsuarioNuevo() {
               id="rol"
               value={form.rol}
               onChange={(e) => set('rol')(e.target.value)}
+              aria-describedby={staffFull ? 'rol-plan' : undefined}
               className={selectClass}
             >
               {ROLES.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
+                <option key={value} value={value} disabled={unavailable.includes(value)}>
+                  {unavailable.includes(value) ? `${label} (no disponible)` : label}
                 </option>
               ))}
             </select>
+            {staffFull && (
+              <p id="rol-plan" className="text-sm text-amber-900">
+                {PLAN_TEXTS.staffLimit}
+              </p>
+            )}
           </div>
         )}
 

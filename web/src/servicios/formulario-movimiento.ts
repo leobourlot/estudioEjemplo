@@ -6,6 +6,7 @@ import type {
   TipoMovimiento,
   UpdateMovimientoData,
 } from './movimientos';
+import { PLAN_TEXTS } from './plan';
 
 /**
  * Formulario de movimiento y filtros del historial (spec 003): validación con los mismos
@@ -263,6 +264,8 @@ export interface PdfVisibilityChange {
   tienePdf: boolean;
   /** Si se eligió un archivo nuevo. */
   pdfNuevo: boolean;
+  /** Con false (plan Básico), el aviso T-11 en lugar de los de la spec 010 (spec 011, RF-15). */
+  planPremium?: boolean;
 }
 
 /**
@@ -272,12 +275,27 @@ export interface PdfVisibilityChange {
  */
 export function pdfVisibilityNotice(cambio: PdfVisibilityChange): string | null {
   if (!cambio.tienePdf || !cambio.movimientoDespues) return null;
+  // Spec 011, RF-15: con el plan Básico, el PDF sigue oculto para el cliente.
+  if (cambio.planPremium === false) return cambio.movimientoAntes ? null : PLAN_TEXTS.pdfKeptHidden;
   if (!cambio.movimientoAntes) return PDF_NOTICES.alsoPdf;
   return cambio.pdfNuevo ? PDF_NOTICES.newPdf : null;
 }
 
 export const RESTORE_WITH_PDF_WARNING =
   'Al restaurarlo, el cliente volverá a ver este movimiento y su PDF';
+
+/**
+ * Con el plan Básico, al restaurar un movimiento visible con un PDF guardado, el aviso T-11, sin
+ * confirmación (spec 011, RF-15). Con el Premium, null: rige la confirmación de RF-19.
+ */
+export function restoreNotice(
+  movimiento: Pick<MovimientoDetalle, 'visible' | 'tienePdf'>,
+  planPremium: boolean,
+): string | null {
+  return !planPremium && movimiento.visible && movimiento.tienePdf
+    ? PLAN_TEXTS.pdfKeptHidden
+    : null;
+}
 
 /** Restaurar un movimiento visible con PDF pide confirmación (RF-19). */
 export function needsRestoreConfirmation(

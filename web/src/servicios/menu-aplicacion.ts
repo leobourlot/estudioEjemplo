@@ -16,6 +16,10 @@ export interface MenuOption {
   end?: boolean;
   /** Otras direcciones cuyos detalles son de esta opción, como las causas del portal. */
   details?: readonly string[];
+  /** Etiqueta junto al nombre, como "Premium" con el plan Básico (spec 011, RF-7). */
+  badge?: string;
+  /** Nombre accesible, si no es el de `label` (spec 011, RNF de accesibilidad). */
+  ariaLabel?: string;
 }
 
 export type Section = 'panel' | 'portal';

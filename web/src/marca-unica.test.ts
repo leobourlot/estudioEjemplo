@@ -12,11 +12,16 @@ import { MARCA } from './servicios/marca';
  * la primera línea del nombre, un WhatsApp (como se muestra o como va en el enlace), un email o un
  * color de la marca, sin distinguir mayúsculas de minúsculas. La segunda línea del nombre no se
  * revisa sola: puede ser una palabra común de la interfaz (por ejemplo, "Abogados").
+ *
+ * Spec 011, RF-35: tampoco revisa el archivo de datos de Bourder Web, cuyo WhatsApp es el de la
+ * marca de ejemplo de la demo.
  */
 
 // Vitest corre la suite desde web/.
 const WEB = resolve('.');
 const BRAND_FILE = join(WEB, 'src', 'servicios', 'marca.ts');
+const BOURDER_WEB_FILE = join(WEB, 'src', 'servicios', 'bourder-web.ts');
+const EXCEPTED = [BRAND_FILE, BOURDER_WEB_FILE];
 const ROOTS = [
   join(WEB, 'src'),
   join(WEB, 'scripts'),
@@ -60,7 +65,7 @@ function collect(path: string, files: Map<string, string>): void {
       if (name === 'node_modules' || name === 'dist') continue;
       collect(join(path, name), files);
     }
-  } else if (TEXT_FILE.test(path) && path !== BRAND_FILE) {
+  } else if (TEXT_FILE.test(path) && !EXCEPTED.includes(path)) {
     files.set(relative(join(WEB, '..'), path).replace(/\\/g, '/'), readFileSync(path, 'utf8'));
   }
 }
@@ -73,6 +78,16 @@ describe('marca única (spec 009, RF-13)', () => {
     expect(files.size).toBeGreaterThan(100);
     expect([...files.keys()].some((path) => path.startsWith('api/src/'))).toBe(true);
     expect(findBrandLiterals(files, brandLiterals())).toEqual([]);
+  });
+
+  it('exceptúa el archivo de marca y el de Bourder Web, y nada más (spec 011, RF-35)', () => {
+    const files = new Map<string, string>();
+    for (const root of ROOTS) collect(root, files);
+
+    expect(files.has('web/src/servicios/marca.ts')).toBe(false);
+    expect(files.has('web/src/servicios/bourder-web.ts')).toBe(false);
+    expect(files.has('web/src/servicios/bourder-web.test.ts')).toBe(true);
+    expect(files.has('web/src/servicios/datos-estudio.ts')).toBe(true);
   });
 
   it('revisa el nombre, la primera línea, los WhatsApp, los emails y los colores', () => {

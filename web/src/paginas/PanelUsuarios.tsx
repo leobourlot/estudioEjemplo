@@ -1,9 +1,11 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AparecerAlCargar } from '../componentes/AparecerAlCargar';
+import { usePlan } from '../componentes/ProveedorPlan';
 import { useSession } from '../componentes/ProveedorSesion';
 import { useUsersService } from '../componentes/ProveedorServicios';
 import { errorMessage } from '../servicios/cliente-http';
+import { PLAN_TEXTS, planSummary } from '../servicios/plan';
 import { documentLabel, listName, roleLabel } from '../servicios/presentacion';
 import type { Rol } from '../servicios/sesion';
 import type { ListUsersQuery, UserPage } from '../servicios/usuarios';
@@ -38,15 +40,42 @@ const STATE_FILTERS: [string, string][] = [
   ['false', 'Desactivadas'],
 ];
 
+/** El valor del filtro de estado para las cuentas fuera del plan (spec 011, RF-22). */
+const OUTSIDE_PLAN_FILTER = 'fuera-del-plan';
+
+/** El valor del filtro de estado que corresponde a la consulta. */
+function stateFilterValue(query: ListUsersQuery): string {
+  if (query.fueraDelPlan) return OUTSIDE_PLAN_FILTER;
+  return query.activo === undefined ? '' : String(query.activo);
+}
+
+/** La consulta que corresponde a un valor del filtro de estado. */
+function stateFilterQuery(value: string): Partial<ListUsersQuery> {
+  if (value === OUTSIDE_PLAN_FILTER) return { activo: undefined, fueraDelPlan: true };
+  return { activo: value === '' ? undefined : value === 'true', fueraDelPlan: undefined };
+}
+
+/** El estado de una cuenta en la lista: T-7 para una cuenta fuera del plan (spec 011, RF-22). */
+const accountState = (cuenta: { activo: boolean; fueraDelPlan: boolean }) =>
+  !cuenta.activo ? 'Desactivada' : cuenta.fueraDelPlan ? PLAN_TEXTS.outsidePlanStatus : 'Activa';
+
 const selectClass = FIELD_SMALL;
 
 /**
  * Listado de cuentas (RF-26): buscador, filtros por rol y estado, de a 20 por página. Un
  * abogado no ve el filtro de roles: la API le devuelve solo clientes.
+ *
+ * Spec 011: con el plan Básico, los administradores ven T-10 y pueden filtrar las cuentas fuera
+ * del plan (RF-19, RF-22); cada cuenta fuera del plan figura con el estado T-7.
  */
 export function PanelUsuarios() {
   const users = useUsersService();
   const { usuario } = useSession();
+  const { info: plan } = usePlan();
+  const planBasicoAdmin = usuario?.rol === 'admin' && plan?.plan === 'basico';
+  const stateFilters: [string, string][] = planBasicoAdmin
+    ? [...STATE_FILTERS, [OUTSIDE_PLAN_FILTER, PLAN_TEXTS.outsidePlanStatus]]
+    : STATE_FILTERS;
   const [query, setQuery] = useState<ListUsersQuery>({ pagina: 1 });
   const [searchText, setSearchText] = useState('');
   const [result, setResult] = useState<UserPage | null>(null);
@@ -89,6 +118,7 @@ export function PanelUsuarios() {
           Nueva cuenta
         </Link>
       </div>
+      {planBasicoAdmin && plan && <p className="mt-2 text-slate-700">{planSummary(plan)}</p>}
 
       <div className="mt-6 flex flex-wrap items-end gap-4">
         <form onSubmit={handleSearch} className="flex items-end gap-2">
@@ -136,15 +166,11 @@ export function PanelUsuarios() {
           </label>
           <select
             id="estado"
-            value={query.activo === undefined ? '' : String(query.activo)}
-            onChange={(event) =>
-              filterBy({
-                activo: event.target.value === '' ? undefined : event.target.value === 'true',
-              })
-            }
+            value={stateFilterValue(query)}
+            onChange={(event) => filterBy(stateFilterQuery(event.target.value))}
             className={selectClass}
           >
-            {STATE_FILTERS.map(([value, label]) => (
+            {stateFilters.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -190,7 +216,7 @@ export function PanelUsuarios() {
                     <td className={TABLE_CELL}>{roleLabel(cuenta.rol)}</td>
                     <td className={TABLE_CELL}>{cuenta.email ?? '—'}</td>
                     <td className={TABLE_CELL}>{documentLabel(cuenta)}</td>
-                    <td className={TABLE_CELL}>{cuenta.activo ? 'Activa' : 'Desactivada'}</td>
+                    <td className={TABLE_CELL}>{accountState(cuenta)}</td>
                   </AparecerAlCargar>
                 ))}
               </tbody>

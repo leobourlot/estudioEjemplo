@@ -2,6 +2,7 @@ import { domAnimation, LazyMotion } from 'motion/react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DisenoPanel } from './componentes/DisenoPanel';
 import { DisenoPortal } from './componentes/DisenoPortal';
+import { RutaPremium } from './componentes/RutaPremium';
 import { RutaProtegida } from './componentes/RutaProtegida';
 import { MiCuenta } from './paginas/MiCuenta';
 import { PaginaCambiarContrasena } from './paginas/PaginaCambiarContrasena';
@@ -67,9 +68,12 @@ export function RutasAplicacion() {
               path="/panel/causas/:id/movimientos/:movimientoId"
               element={<PanelMovimientoDetalle />}
             />
-            <Route path="/panel/jurisprudencia" element={<PanelJurisprudencia />} />
-            <Route path="/panel/jurisprudencia/nuevo" element={<PanelFalloNuevo />} />
-            <Route path="/panel/jurisprudencia/:id" element={<PanelFalloDetalle />} />
+            {/* Solo con el plan Premium; con el Básico, la pantalla T-2 (spec 011, RF-7). */}
+            <Route element={<RutaPremium />}>
+              <Route path="/panel/jurisprudencia" element={<PanelJurisprudencia />} />
+              <Route path="/panel/jurisprudencia/nuevo" element={<PanelFalloNuevo />} />
+              <Route path="/panel/jurisprudencia/:id" element={<PanelFalloDetalle />} />
+            </Route>
             <Route path="/panel/modelos" element={<PanelModelos />} />
             <Route path="/panel/modelos/nuevo" element={<PanelModeloNuevo />} />
             <Route path="/panel/modelos/:id" element={<PanelModeloDetalle />} />

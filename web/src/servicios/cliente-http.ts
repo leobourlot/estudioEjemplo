@@ -30,6 +30,12 @@ export class ApiError extends Error {
 
 type RefreshResult = 'renewed' | 'rejected' | 'network-error';
 
+/**
+ * Lo que recibe quien escucha el cierre de la sesión: el mensaje con que la api rechazó la
+ * renovación, si lo hubo (spec 011, RF-21: T-6 para una cuenta fuera del plan).
+ */
+export type SessionClosedListener = (message?: string | null) => void;
+
 export interface HttpClientOptions {
   /** URL de la API sin /api; vacía usa rutas relativas (proxy de Vite en desarrollo). */
   baseUrl: string;
@@ -37,13 +43,16 @@ export interface HttpClientOptions {
 }
 
 export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClientOptions) {
-  const sessionClosedListeners = new Set<() => void>();
+  const sessionClosedListeners = new Set<SessionClosedListener>();
   const activityListeners = new Set<() => void>();
   // Una sola renovación en curso, compartida por todas las peticiones de la pestaña: si
   // varias reciben 401 a la vez, ninguna presenta un token ya rotado (RF-15).
   let refreshInProgress: Promise<RefreshResult> | null = null;
 
-  const notifySessionClosed = () => sessionClosedListeners.forEach((listener) => listener());
+  const notifySessionClosed = (message: string | null = null) =>
+    sessionClosedListeners.forEach((listener) => listener(message));
+  // El mensaje del último rechazo de la renovación, para el aviso de la pantalla de ingreso.
+  let rejectionMessage: string | null = null;
   // Cada pedido enviado al servidor cuenta como uso de la sesión (spec 001, RF-12).
   const notifyActivity = () => activityListeners.forEach((listener) => listener());
 
@@ -53,10 +62,14 @@ export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClient
       method: 'POST',
       credentials: 'include',
     })
-      .then((response): RefreshResult => (response.ok ? 'renewed' : 'rejected'))
+      .then(async (response): Promise<RefreshResult> => {
+        if (response.ok) return 'renewed';
+        rejectionMessage = (await toApiError(response)).messages[0] ?? null;
+        return 'rejected';
+      })
       .catch((): RefreshResult => 'network-error')
       .then((result) => {
-        if (result === 'rejected') notifySessionClosed();
+        if (result === 'rejected') notifySessionClosed(rejectionMessage);
         return result;
       })
       .finally(() => {
@@ -79,7 +92,8 @@ export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClient
         method,
         credentials: 'include',
         headers: json ? { 'Content-Type': 'application/json' } : undefined,
-        body: payload === undefined ? undefined : json ? JSON.stringify(payload.json) : payload.form,
+        body:
+          payload === undefined ? undefined : json ? JSON.stringify(payload.json) : payload.form,
       });
     } catch {
       throw new ApiError(0, [NETWORK_ERROR_MESSAGE]);
@@ -124,7 +138,7 @@ export function createHttpClient({ baseUrl, fetch: fetchFn = fetch }: HttpClient
     /** Un archivo, con el nombre que da la api en Content-Disposition (plan 010, D4 y D5). */
     getFile: (path: string) => request<ArchivoDescargado>('GET', path, undefined, readFile),
     /** Avisa cuando la sesión venció o se cerró y no se pudo renovar. Devuelve cómo dejar de escuchar. */
-    onSessionClosed(listener: () => void): () => void {
+    onSessionClosed(listener: SessionClosedListener): () => void {
       sessionClosedListeners.add(listener);
       return () => sessionClosedListeners.delete(listener);
     },

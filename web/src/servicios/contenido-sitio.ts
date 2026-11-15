@@ -246,7 +246,6 @@ export const TEXTOS = {
     derechos: MARCA.textos.derechos,
     disenadoPor: 'Diseñado por',
     bourderWeb: 'Bourder Web',
-    bourderWebUrl: 'https://bourderweb.com.ar',
   },
 } as const;
 

@@ -20,7 +20,11 @@ import {
   type PdfFormState,
   pendingRejectionMessage,
 } from '../servicios/formulario-pdf';
+import { isNearPdfLimit, isPdfSpaceError, nearLimitText, PLAN_TEXTS } from '../servicios/plan';
+import { AvisoPlan } from './AvisoPlan';
 import { CampoPdf, type PdfGuardadoInfo } from './CampoPdf';
+import { ContactoBourderWeb } from './ContactoBourderWeb';
+import { usePlan } from './ProveedorPlan';
 import { ConfirmacionGuardar } from './ConfirmacionGuardar';
 import type { MovimientoDetalle, TipoMovimiento } from '../servicios/movimientos';
 import { EMPTY_VALUE } from '../servicios/presentacion';
@@ -59,6 +63,11 @@ const usedCharacters = (text: string) =>
  * Alta y edición de un movimiento (RF-1, RF-8, RF-11). Nace no visible. Valida antes de
  * enviar con los mismos mensajes que la API. Los avisos de RF-9 y RF-13 son informativos: no
  * impiden guardar.
+ *
+ * Spec 011: con el plan Básico, el aviso T-3 en lugar del PDF (RF-10) y T-11 al dejar visible un
+ * movimiento con un PDF guardado (RF-15); con el Premium, T-8 junto al PDF desde el 90 % del
+ * espacio (RF-29) y el contacto debajo de T-9 (RF-33). Después de enviar un PDF, vuelve a pedir el
+ * plan, para que el espacio usado esté al día.
  */
 export function FormularioMovimiento({
   value,
@@ -74,6 +83,8 @@ export function FormularioMovimiento({
   pdfGuardado = null,
 }: FormularioMovimientoProps) {
   const [problems, setProblems] = useState<string[]>([]);
+  const { info: plan, refresh: refreshPlan } = usePlan();
+  const planBasico = plan?.plan === 'basico';
   // La confirmación pendiente de reemplazar o quitar el PDF (spec 010, RF-13).
   const [confirmando, setConfirmando] = useState<string | null>(null);
 
@@ -94,12 +105,18 @@ export function FormularioMovimiento({
       setConfirmando(confirmation);
       return;
     }
+    await send();
+  }
+
+  async function send() {
+    const conPdf = pdf !== undefined && (pdf.archivo !== null || pdf.quitar);
     await onSubmit();
+    if (conPdf) refreshPlan();
   }
 
   async function confirm() {
     setConfirmando(null);
-    await onSubmit();
+    await send();
   }
 
   const preview = visibleTextPreview(value);
@@ -108,14 +125,17 @@ export function FormularioMovimiento({
     ? pdfVisibilityNotice({
         movimientoAntes: original?.visible ?? false,
         movimientoDespues: value.visible,
-        tienePdf: hasPdf(pdf),
+        // Con el plan Básico, el PDF guardado no llega: solo si lo tiene (spec 011, RF-12).
+        tienePdf: planBasico ? (original?.tienePdf ?? false) : hasPdf(pdf),
         pdfNuevo: pdf.archivo !== null,
+        planPremium: !planBasico,
       })
     : null;
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <ListaDeErrores messages={[...problems, ...apiProblems]} />
+      {apiProblems.some(isPdfSpaceError) && <ContactoBourderWeb motivo="espacio" />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
@@ -216,8 +236,15 @@ export function FormularioMovimiento({
         </p>
       )}
 
-      {pdf && onPdfChange && (
-        <CampoPdf estado={pdf} onChange={onPdfChange} guardado={pdfGuardado} />
+      {/* Spec 011, RF-10: también desde un escrito completado, que no ofrece el PDF. */}
+      {planBasico && <AvisoPlan texto={PLAN_TEXTS.pdfNotIncluded} motivo="premium" />}
+      {pdf && onPdfChange && !planBasico && (
+        <>
+          <CampoPdf estado={pdf} onChange={onPdfChange} guardado={pdfGuardado} />
+          {plan && isNearPdfLimit(plan) && (
+            <AvisoPlan texto={nearLimitText(plan)} motivo="espacio" />
+          )}
+        </>
       )}
 
       {pdfNotice && pdfNotice !== PDF_NOTICES.alsoPdf && (
@@ -241,7 +268,11 @@ export function FormularioMovimiento({
       )}
 
       <div className="flex gap-2">
-        <button type="submit" disabled={enviando || confirmando !== null} className={PRIMARY_BUTTON_SMALL}>
+        <button
+          type="submit"
+          disabled={enviando || confirmando !== null}
+          className={PRIMARY_BUTTON_SMALL}
+        >
           {submitLabel}
         </button>
         {onCancel && (

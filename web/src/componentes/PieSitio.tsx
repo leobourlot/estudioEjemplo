@@ -11,6 +11,7 @@ import { MARCA } from '../servicios/marca';
 import { IconoEmail, IconoUbicacionColor } from './IconosContacto';
 import { IconoRedColor } from './IconosRedes';
 import { NombreEstudio } from './NombreEstudio';
+import { BOURDER_WEB } from '../servicios/bourder-web';
 
 interface PieSitioProps {
   /** Mensaje de WhatsApp de la página (spec 007, RF-27). */
@@ -162,7 +163,7 @@ export function PieSitio({
           <p>{copyrightNotice(anio)}</p>
           <p className="flex flex-wrap items-center gap-x-2">
             {TEXTOS.pie.disenadoPor}{' '}
-            <a href={TEXTOS.pie.bourderWebUrl} className={LINK} {...EXTERNAL}>
+            <a href={BOURDER_WEB.sitioUrl} className={LINK} {...EXTERNAL}>
               <img src={BOURDER_WEB_LOGO} alt="" width={40} height={30} className="h-7 w-auto" />
               {TEXTOS.pie.bourderWeb}
             </a>

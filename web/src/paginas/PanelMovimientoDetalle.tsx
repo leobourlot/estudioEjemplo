@@ -4,6 +4,7 @@ import { AccionesPdf } from '../componentes/AccionesPdf';
 import { FormularioMovimiento } from '../componentes/FormularioMovimiento';
 import { HistorialCambios } from '../componentes/HistorialCambios';
 import { ListaDeErrores } from '../componentes/ListaDeErrores';
+import { usePlan } from '../componentes/ProveedorPlan';
 import { useMovimientosService } from '../componentes/ProveedorServicios';
 import { TextoLiteral } from '../componentes/TextoLiteral';
 import { formatPdfSize } from '../servicios/archivo-pdf';
@@ -14,6 +15,7 @@ import {
   type MovementForm,
   movementFormFrom,
   needsRestoreConfirmation,
+  restoreNotice,
   RESTORE_WITH_PDF_WARNING,
 } from '../servicios/formulario-movimiento';
 import { afterSaveError, initialPdfState, pdfChanges } from '../servicios/formulario-pdf';
@@ -32,6 +34,7 @@ import {
   PAGE_TITLE,
   SECONDARY_BUTTON_SMALL,
   SECTION_TITLE,
+  STATUS_ALERT,
   TEXT_LINK,
 } from '../componentes/estilos-aplicacion';
 
@@ -72,6 +75,9 @@ export function PanelMovimientoDetalle() {
   const [problems, setProblems] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [pdf, setPdf] = useState(() => initialPdfState(false));
+  // Spec 011, RF-15: con el plan Básico, T-11 después de restaurar un movimiento visible con PDF.
+  const [restoreInfo, setRestoreInfo] = useState<string | null>(null);
+  const planPremium = usePlan().info?.plan !== 'basico';
   const restoreTitleId = useId();
 
   useEffect(() => {
@@ -89,14 +95,18 @@ export function PanelMovimientoDetalle() {
     };
   }, [movimientos, causaId, movimientoId]);
 
-  async function run(action: () => Promise<MovimientoDetalle>) {
+  /** Corre una acción sobre el movimiento; true si terminó bien. */
+  async function run(action: () => Promise<MovimientoDetalle>): Promise<boolean> {
     setEnviando(true);
     setProblems([]);
+    setRestoreInfo(null);
     try {
       setMovimiento(await action());
       setEditing(false);
+      return true;
     } catch (caught) {
       setProblems(messagesOf(caught));
+      return false;
     } finally {
       setEnviando(false);
     }
@@ -136,14 +146,19 @@ export function PanelMovimientoDetalle() {
     return run(() => movimientos.annulMovement(causaId, movimientoId));
   };
 
-  const restore = () => {
+  const restore = async () => {
     setConfirmingRestore(false);
-    return run(() => movimientos.restoreMovement(causaId, movimientoId));
+    const aviso = movimiento ? restoreNotice(movimiento, planPremium) : null;
+    const ok = await run(() => movimientos.restoreMovement(causaId, movimientoId));
+    if (ok && aviso) setRestoreInfo(aviso);
   };
 
-  /** Un movimiento visible con PDF pide confirmación antes de restaurarlo (spec 010, RF-19). */
+  /**
+   * Un movimiento visible con PDF pide confirmación antes de restaurarlo (spec 010, RF-19). Con el
+   * plan Básico no: el PDF sigue oculto y se avisa después (spec 011, RF-15).
+   */
   const askRestore = (current: MovimientoDetalle) =>
-    needsRestoreConfirmation(current) ? setConfirmingRestore(true) : void restore();
+    planPremium && needsRestoreConfirmation(current) ? setConfirmingRestore(true) : void restore();
 
   const backLink = (
     <Link to={`/panel/causas/${causaId}`} className={`text-sm ${TEXT_LINK}`}>
@@ -199,6 +214,11 @@ export function PanelMovimientoDetalle() {
       )}
 
       <ListaDeErrores messages={editing ? [] : problems} />
+      {restoreInfo && (
+        <p role="status" className={STATUS_ALERT}>
+          {restoreInfo}
+        </p>
+      )}
 
       <section aria-label="Datos del movimiento" className={`space-y-4 p-6 ${CARD}`}>
         <div className="flex items-center justify-between">
@@ -324,25 +344,28 @@ export function PanelMovimientoDetalle() {
             <Dato label="Texto para el cliente">
               <TextoLiteral texto={movimiento.textoCliente ?? EMPTY_VALUE} />
             </Dato>
-            <Dato label="PDF">
-              {movimiento.pdf ? (
-                <div className="space-y-2">
-                  <p>
-                    {formatPdfSize(movimiento.pdf.tamano)}, subido por{' '}
-                    {authorName(movimiento.pdf.subidoPor)} el{' '}
-                    {formatDateTime(movimiento.pdf.subidoEn)}.
-                  </p>
-                  <AccionesPdf
-                    verHref={`/panel/causas/${causaId}/movimientos/${movimientoId}/pdf`}
-                    etiqueta={`del movimiento del ${formatMovementDate(movimiento.fecha)}`}
-                    descargar={() => movimientos.getPdf(causaId, movimientoId)}
-                    inicio="/panel"
-                  />
-                </div>
-              ) : (
-                'Sin PDF'
-              )}
-            </Dato>
+            {/* Con el plan Básico, ningún dato del PDF (spec 011, RF-12). */}
+            {planPremium && (
+              <Dato label="PDF">
+                {movimiento.pdf ? (
+                  <div className="space-y-2">
+                    <p>
+                      {formatPdfSize(movimiento.pdf.tamano)}, subido por{' '}
+                      {authorName(movimiento.pdf.subidoPor)} el{' '}
+                      {formatDateTime(movimiento.pdf.subidoEn)}.
+                    </p>
+                    <AccionesPdf
+                      verHref={`/panel/causas/${causaId}/movimientos/${movimientoId}/pdf`}
+                      etiqueta={`del movimiento del ${formatMovementDate(movimiento.fecha)}`}
+                      descargar={() => movimientos.getPdf(causaId, movimientoId)}
+                      inicio="/panel"
+                    />
+                  </div>
+                ) : (
+                  'Sin PDF'
+                )}
+              </Dato>
+            )}
           </dl>
         )}
       </section>

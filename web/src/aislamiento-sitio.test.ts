@@ -57,6 +57,8 @@ const SITE_MODULES = new Set([
   'useTituloDocumento',
   // Servicios.
   'archivos-sitio',
+  // El enlace "Diseñado por" del pie sale de los datos de Bourder Web (spec 011, RF-34).
+  'bourder-web',
   'cabecera-pagina',
   'contenido-sitio',
   'datos-estudio',

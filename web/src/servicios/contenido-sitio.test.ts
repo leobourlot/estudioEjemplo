@@ -23,6 +23,7 @@ import {
   type ClaveServicio,
 } from './contenido-sitio';
 import { MARCA } from './marca';
+import { BOURDER_WEB } from './bourder-web';
 
 /**
  * Los textos que son de la marca (los de la apertura, los servicios, las integrantes, los
@@ -278,6 +279,7 @@ describe('pie de página (spec 007, T-18 y RF-44; spec 009, RF-10)', () => {
 
   it('"Diseñado por" y Bourder Web, con su dirección, no son de la marca', () => {
     expect([TEXTOS.pie.disenadoPor, TEXTOS.pie.bourderWeb]).toEqual(quotedStrings(line('Diseño')));
-    expect(line('Diseño')).toContain(TEXTOS.pie.bourderWebUrl);
+    // La dirección sale del archivo de Bourder Web (spec 011, RF-34).
+    expect(line('Diseño')).toContain(BOURDER_WEB.sitioUrl);
   });
 });

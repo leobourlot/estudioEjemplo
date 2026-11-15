@@ -8,6 +8,7 @@ import type {
   TipoMovimiento,
 } from './movimientos';
 import { formatPdfSize } from './archivo-pdf';
+import { PDF_HIDDEN_BY_PLAN, PLAN_TEXTS } from './plan';
 import { EMPTY_VALUE, formatDateTime } from './presentacion';
 
 /** Cómo se muestran los datos de los movimientos. Funciones puras, sin React (principio 3). */
@@ -98,6 +99,8 @@ export function formatChangeValue(
   valor: string | boolean | PdfCambio | null,
 ): string {
   if (campo === 'pdf') {
+    // Spec 011, RF-16: con el plan Básico, la api manda la marca en lugar de los datos (T-15).
+    if (valor === PDF_HIDDEN_BY_PLAN) return PLAN_TEXTS.pdfInHistory;
     if (valor === null || typeof valor !== 'object') return 'Sin PDF';
     // El código no se muestra: no le dice nada a quien lee el historial (RF-21). Tampoco la
     // visibilidad que traen los cambios viejos: el PDF ya no la tiene (RF-17).

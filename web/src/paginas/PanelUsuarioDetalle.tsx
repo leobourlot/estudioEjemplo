@@ -19,6 +19,7 @@ import {
   fullName,
   listName,
 } from '../servicios/presentacion';
+import { PLAN_TEXTS } from '../servicios/plan';
 import type { Rol } from '../servicios/sesion';
 import type { UsuarioDetalle } from '../servicios/usuarios';
 import {
@@ -29,6 +30,8 @@ import {
   PAGE,
   PRIMARY_BUTTON_SMALL,
   SECTION_TITLE,
+  STATUS_ALERT,
+  STATUS_BADGE,
   TEXT_LINK,
 } from '../componentes/estilos-aplicacion';
 
@@ -142,7 +145,13 @@ export function PanelUsuarioDetalle() {
 
       {account && form && (
         <>
-          <p className="mt-1 text-lg text-slate-700">{listName(account)}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-lg text-slate-700">
+            {listName(account)}
+            {/* Spec 011, RF-22: el estado T-7. */}
+            {account.activo && account.fueraDelPlan && (
+              <span className={STATUS_BADGE}>{PLAN_TEXTS.outsidePlanStatus}</span>
+            )}
+          </p>
 
           <dl aria-label="Datos de la cuenta" className={`divide-y divide-slate-200 ${CARD}`}>
             {[...accountRows(account), ...auditRows(account)].map(([label, value]) => (
@@ -153,95 +162,102 @@ export function PanelUsuarioDetalle() {
             ))}
           </dl>
 
-          <form
-            aria-label="Editar datos"
-            onSubmit={handleSubmit}
-            noValidate
-            className={`space-y-4 p-6 ${CARD}`}
-          >
-            <h2 className={SECTION_TITLE}>Editar datos</h2>
-            <ListaDeErrores messages={problems} />
-            {saved && (
-              <p role="status" className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">
-                Cambios guardados
-              </p>
-            )}
+          {/* Spec 011, RF-23: una cuenta fuera del plan no se modifica; se habilita primero. */}
+          {account.activo && account.fueraDelPlan ? (
+            <p role="status" className={STATUS_ALERT}>
+              {PLAN_TEXTS.outsidePlanAccount}
+            </p>
+          ) : (
+            <form
+              aria-label="Editar datos"
+              onSubmit={handleSubmit}
+              noValidate
+              className={`space-y-4 p-6 ${CARD}`}
+            >
+              <h2 className={SECTION_TITLE}>Editar datos</h2>
+              <ListaDeErrores messages={problems} />
+              {saved && (
+                <p role="status" className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">
+                  Cambios guardados
+                </p>
+              )}
 
-            {isLegalPerson && (
+              {isLegalPerson && (
+                <CampoTexto
+                  id="editar-razonSocial"
+                  label="Razón social"
+                  value={form.razonSocial}
+                  onChange={set('razonSocial')}
+                />
+              )}
               <CampoTexto
-                id="editar-razonSocial"
-                label="Razón social"
-                value={form.razonSocial}
-                onChange={set('razonSocial')}
+                id="editar-nombre"
+                label={isLegalPerson ? 'Nombre del contacto' : 'Nombre'}
+                value={form.nombre}
+                onChange={set('nombre')}
               />
-            )}
-            <CampoTexto
-              id="editar-nombre"
-              label={isLegalPerson ? 'Nombre del contacto' : 'Nombre'}
-              value={form.nombre}
-              onChange={set('nombre')}
-            />
-            <CampoTexto
-              id="editar-apellido"
-              label={isLegalPerson ? 'Apellido del contacto' : 'Apellido'}
-              value={form.apellido}
-              onChange={set('apellido')}
-            />
-            {!account.cliente && (
-              <CampoTexto id="editar-dni" label="DNI" value={form.dni} onChange={set('dni')} />
-            )}
-            <CampoTexto
-              id="editar-email"
-              label={account.cliente ? 'Email (opcional)' : 'Email'}
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-            />
+              <CampoTexto
+                id="editar-apellido"
+                label={isLegalPerson ? 'Apellido del contacto' : 'Apellido'}
+                value={form.apellido}
+                onChange={set('apellido')}
+              />
+              {!account.cliente && (
+                <CampoTexto id="editar-dni" label="DNI" value={form.dni} onChange={set('dni')} />
+              )}
+              <CampoTexto
+                id="editar-email"
+                label={account.cliente ? 'Email (opcional)' : 'Email'}
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+              />
 
-            {canChangeRole && (
-              <div className="space-y-1">
-                <label htmlFor="editar-rol" className={LABEL}>
-                  Rol
-                </label>
-                <select
-                  id="editar-rol"
-                  value={form.rol}
-                  onChange={(event) => set('rol')(event.target.value)}
-                  className={INPUT}
-                >
-                  {STAFF_ROLES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+              {canChangeRole && (
+                <div className="space-y-1">
+                  <label htmlFor="editar-rol" className={LABEL}>
+                    Rol
+                  </label>
+                  <select
+                    id="editar-rol"
+                    value={form.rol}
+                    onChange={(event) => set('rol')(event.target.value)}
+                    className={INPUT}
+                  >
+                    {STAFF_ROLES.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {account.cliente && (
+                <>
+                  <CampoTexto
+                    id="editar-telefono"
+                    label="Teléfono"
+                    type="tel"
+                    value={form.telefono}
+                    onChange={set('telefono')}
+                  />
+                  <CampoTexto
+                    id="editar-domicilio"
+                    label="Domicilio"
+                    value={form.domicilio}
+                    onChange={set('domicilio')}
+                  />
+                </>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={guardando} className={PRIMARY_BUTTON_SMALL}>
+                  {guardando ? 'Guardando…' : 'Guardar cambios'}
+                </button>
               </div>
-            )}
-
-            {account.cliente && (
-              <>
-                <CampoTexto
-                  id="editar-telefono"
-                  label="Teléfono"
-                  type="tel"
-                  value={form.telefono}
-                  onChange={set('telefono')}
-                />
-                <CampoTexto
-                  id="editar-domicilio"
-                  label="Domicilio"
-                  value={form.domicilio}
-                  onChange={set('domicilio')}
-                />
-              </>
-            )}
-
-            <div className="flex justify-end pt-2">
-              <button type="submit" disabled={guardando} className={PRIMARY_BUTTON_SMALL}>
-                {guardando ? 'Guardando…' : 'Guardar cambios'}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
 
           <AccionesCuenta
             account={account}

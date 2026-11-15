@@ -3,6 +3,7 @@ import { type CausasService, causasService } from '../servicios/causas';
 import { type JurisprudenciaService, jurisprudenciaService } from '../servicios/jurisprudencia';
 import { type ModelosService, modelosService } from '../servicios/modelos-escritos';
 import { type MovimientosService, movimientosService } from '../servicios/movimientos';
+import { type PlanService, planService } from '../servicios/plan';
 import { type PortalService, portalService } from '../servicios/portal';
 import { type UsersService, usersService } from '../servicios/usuarios';
 
@@ -13,6 +14,7 @@ interface Services {
   portal: PortalService;
   jurisprudencia: JurisprudenciaService;
   modelos: ModelosService;
+  plan: PlanService;
 }
 
 // Por defecto, los servicios reales. Los tests los reemplazan con ProveedorServicios.
@@ -23,6 +25,7 @@ const ServicesContext = createContext<Services>({
   portal: portalService,
   jurisprudencia: jurisprudenciaService,
   modelos: modelosService,
+  plan: planService,
 });
 
 /** Permite reemplazar los servicios de la API, por ejemplo con versiones simuladas en tests. */
@@ -54,3 +57,6 @@ export const useJurisprudenciaService = () => useContext(ServicesContext).jurisp
 
 /** Solo para el panel: ningún componente del portal lo usa (spec 006, RF-52). */
 export const useModelosService = () => useContext(ServicesContext).modelos;
+
+/** Solo para el panel: lo usa ProveedorPlan, que monta DisenoPanel (spec 011, RF-32). */
+export const usePlanService = () => useContext(ServicesContext).plan;

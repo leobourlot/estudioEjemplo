@@ -18,6 +18,7 @@ import { fakeSessionService, fakeUsersService, testUser } from './aplicacion-de-
 import { fakeCausasService } from './causas-de-prueba';
 import { fakeMovimientosService } from './movimientos-de-prueba';
 import { fakePortalService } from './portal-de-prueba';
+import { fakePlanService } from './plan-de-prueba';
 
 /** Datos y servicios simulados para las páginas de modelos de escritos (spec 006). */
 
@@ -149,6 +150,7 @@ export function renderModelsApp(path: string, options: RenderModelsOptions = {})
           movimientos,
           causas,
           modelos,
+          plan: fakePlanService(),
         }}
       >
         <ProveedorSesion

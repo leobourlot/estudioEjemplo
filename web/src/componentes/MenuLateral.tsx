@@ -9,9 +9,11 @@ import {
   SECTION_NAMES,
   type Section,
 } from '../servicios/menu-aplicacion';
+import { withPlanBadge } from '../servicios/plan';
 import { FOCUS_RING_ON_DARK } from './estilos-aplicacion';
 import { IconoCerrar, IconoMenu } from './IconosMenu';
 import { NombreEstudio } from './NombreEstudio';
+import { usePlan } from './ProveedorPlan';
 
 export const MENU_ID = 'menu-lateral';
 
@@ -55,6 +57,9 @@ export function MenuLateral({
   closeButtonRef,
 }: MenuLateralProps) {
   const { pathname } = useLocation();
+  // Con el plan Básico, la jurisprudencia lleva la etiqueta "Premium" (spec 011, RF-7).
+  const plan = usePlan().info?.plan ?? null;
+  const options = section === 'panel' ? withPlanBadge(MENUS.panel, plan) : MENUS[section];
   const plegado = abierto ? 'visible translate-x-0' : 'invisible -translate-x-full';
 
   return (
@@ -95,18 +100,24 @@ export function MenuLateral({
 
       <nav aria-label={NAV_LABELS[section]} className="px-3">
         <ul className="space-y-1">
-          {MENUS[section].map((option) => {
+          {options.map((option) => {
             const active = isSectionActive(option, pathname);
             return (
               <li key={option.to}>
                 <Link
                   to={option.to}
                   aria-current={active ? 'page' : undefined}
+                  aria-label={option.ariaLabel}
                   onClick={onChoose}
                   className={active ? ACTIVE_OPTION : INACTIVE_OPTION}
                 >
                   <IconoMenu nombre={option.icon} />
                   {option.label}
+                  {option.badge && (
+                    <span className="ml-auto rounded-full border border-estudio-blanco/40 px-2 py-0.5 text-xs font-medium text-estudio-blanco">
+                      {option.badge}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

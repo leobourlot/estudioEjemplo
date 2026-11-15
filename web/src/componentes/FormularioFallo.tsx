@@ -14,7 +14,11 @@ import {
 } from '../servicios/formulario-pdf';
 import { JURISDICTION_OPTIONS } from '../servicios/presentacion-causas';
 import { MAX_SUMARIO_LENGTH } from '../servicios/texto-fallo';
+import { isNearPdfLimit, isPdfSpaceError, nearLimitText } from '../servicios/plan';
+import { AvisoPlan } from './AvisoPlan';
 import { CampoPdf, type PdfGuardadoInfo } from './CampoPdf';
+import { ContactoBourderWeb } from './ContactoBourderWeb';
+import { usePlan } from './ProveedorPlan';
 import { ConfirmacionGuardar } from './ConfirmacionGuardar';
 import { ListaDeErrores } from './ListaDeErrores';
 import { SelectorPalabrasClave } from './SelectorPalabrasClave';
@@ -61,6 +65,7 @@ export function FormularioFallo({
   pdfGuardado = null,
 }: FormularioFalloProps) {
   const [problems, setProblems] = useState<string[]>([]);
+  const { info: plan, refresh: refreshPlan } = usePlan();
   // La confirmación pendiente de reemplazar o quitar el PDF (spec 010, RF-13).
   const [confirmando, setConfirmando] = useState<string | null>(null);
   const today = todayInBuenosAires();
@@ -84,17 +89,25 @@ export function FormularioFallo({
       setConfirmando(confirmation);
       return;
     }
+    await send();
+  }
+
+  /** Después de enviar un PDF, el espacio usado cambia: vuelve a pedir el plan (spec 011). */
+  async function send() {
+    const conPdf = pdf !== undefined && (pdf.archivo !== null || pdf.quitar);
     await onSubmit();
+    if (conPdf) refreshPlan();
   }
 
   async function confirm() {
     setConfirmando(null);
-    await onSubmit();
+    await send();
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <ListaDeErrores messages={[...problems, ...apiProblems]} />
+      {apiProblems.some(isPdfSpaceError) && <ContactoBourderWeb motivo="espacio" />}
 
       <div className="space-y-1">
         <label htmlFor="caratula" className={labelClass}>
@@ -220,6 +233,10 @@ export function FormularioFallo({
       {/* El PDF de un fallo nunca llega al cliente: sin casilla de visibilidad (RF-27). */}
       {pdf && onPdfChange && (
         <CampoPdf estado={pdf} onChange={onPdfChange} guardado={pdfGuardado} />
+      )}
+      {/* Spec 011, RF-29: desde el 90 % del espacio, junto al PDF. */}
+      {pdf && onPdfChange && plan && isNearPdfLimit(plan) && (
+        <AvisoPlan texto={nearLimitText(plan)} motivo="espacio" />
       )}
 
       {confirmando && (

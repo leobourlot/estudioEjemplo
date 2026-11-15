@@ -1,4 +1,10 @@
 import type { IntegranteResumen, LawyersData } from '../servicios/causas';
+
+/**
+ * Se ofrece para agregar un integrante activo y dentro del plan (spec 011, RF-26). Los demás
+ * siguen donde ya estaban.
+ */
+const isOfferable = (member: IntegranteResumen) => member.activo && !member.fueraDelPlan;
 import type { LawyersForm } from '../servicios/formulario-causa';
 import { memberName } from '../servicios/presentacion-causas';
 import { INPUT, LABEL } from './estilos-aplicacion';
@@ -26,11 +32,11 @@ export function SelectorIntegrantes({
   onChange,
 }: SelectorIntegrantesProps) {
   const responsableCandidates = members.filter(
-    (member) => member.activo || member.id === assigned?.responsableId,
+    (member) => isOfferable(member) || member.id === assigned?.responsableId,
   );
   const collaboratorCandidates = members.filter(
     (member) =>
-      (member.activo || assigned?.colaboradorIds.includes(member.id)) &&
+      (isOfferable(member) || assigned?.colaboradorIds.includes(member.id)) &&
       member.id !== value.responsableId,
   );
 

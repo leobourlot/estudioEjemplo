@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { ACTION_TEXTS, type AccountAction, availableActions } from '../servicios/acciones-cuenta';
+import {
+  ACTION_TEXTS,
+  type AccountAction,
+  actionAccessibleName,
+  availableActions,
+} from '../servicios/acciones-cuenta';
 import { ApiError, errorMessage } from '../servicios/cliente-http';
 import type { UsersService, UsuarioDetalle } from '../servicios/usuarios';
 import { findPasswordRuleViolation } from '../servicios/validaciones';
@@ -31,6 +36,8 @@ function runAction(
       return users.releaseEmail(id);
     case 'transferPrincipal':
       return users.transferPrincipal(id);
+    case 'enableInPlan':
+      return users.enableInPlan(id);
   }
 }
 
@@ -114,6 +121,7 @@ export function AccionesCuenta({ account, onChanged }: AccionesCuentaProps) {
             key={action}
             type="button"
             onClick={() => select(action)}
+            aria-label={actionAccessibleName(action, account)}
             disabled={running}
             className={SECONDARY_BUTTON_SMALL}
           >

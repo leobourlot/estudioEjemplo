@@ -1,3 +1,5 @@
+import { isPdfSpaceError, PLAN_TEXTS } from './plan';
+
 /**
  * El PDF elegido en un formulario (spec 010; plan 010, "Comportamiento de la interfaz"). La
  * interfaz rechaza antes de enviar un archivo que no es un PDF o que supera los 5 MB, con los
@@ -64,7 +66,14 @@ export function pdfForm(datos: object, pdf: File): FormData {
   return form;
 }
 
-/** Si un mensaje de la api es de una regla del archivo: el formulario descarta el archivo (RF-11). */
+/**
+ * Si un mensaje de la api es de una regla del archivo: el formulario descarta el archivo (RF-11).
+ * También el rechazo por el plan (T-4) y por el espacio (T-9): spec 011, RF-11 y RF-28.
+ */
 export function isPdfFileError(mensaje: string): boolean {
-  return (Object.values(PDF_FILE_MESSAGES) as string[]).includes(mensaje);
+  return (
+    (Object.values(PDF_FILE_MESSAGES) as string[]).includes(mensaje) ||
+    mensaje === PLAN_TEXTS.featureNotIncluded ||
+    isPdfSpaceError(mensaje)
+  );
 }

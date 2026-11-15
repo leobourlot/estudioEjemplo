@@ -4,9 +4,12 @@ import { vi } from 'vitest';
 import { ProveedorServicios } from '../componentes/ProveedorServicios';
 import { ProveedorSesion } from '../componentes/ProveedorSesion';
 import { RutasAplicacion } from '../RutasAplicacion';
+import type { SessionClosedListener } from '../servicios/cliente-http';
+import type { PlanService } from '../servicios/plan';
 import type { PortalService } from '../servicios/portal';
 import type { Rol, SessionService, UsuarioPropio } from '../servicios/sesion';
 import type { UsersService, UsuarioDetalle } from '../servicios/usuarios';
+import { fakePlanService } from './plan-de-prueba';
 import { fakePortalService } from './portal-de-prueba';
 
 /** El inicio del panel, en las listas de destinos de los tests (ver findScreenHeading). */
@@ -48,6 +51,7 @@ export function testAccount(overrides: Partial<UsuarioDetalle> = {}): UsuarioDet
   return {
     ...testUser(overrides.rol ?? 'abogado'),
     activo: true,
+    fueraDelPlan: false,
     ultimoIngreso: null,
     creadoEn: '2026-09-01T15:00:00.000Z',
     modificadoEn: null,
@@ -85,6 +89,7 @@ export function fakeUsersService(overrides: Partial<UsersService> = {}): FakeUse
     resetPassword: vi.fn().mockResolvedValue(undefined),
     releaseEmail: vi.fn().mockResolvedValue(undefined),
     transferPrincipal: vi.fn().mockResolvedValue(undefined),
+    enableInPlan: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   } as FakeUsersService;
 }
@@ -96,10 +101,10 @@ export function fakeUsersService(overrides: Partial<UsersService> = {}): FakeUse
 export function renderApp(
   path: string,
   service: SessionService = fakeSessionService(),
-  services: { users?: UsersService; portal?: PortalService } = {},
+  services: { users?: UsersService; portal?: PortalService; plan?: PlanService } = {},
 ) {
-  const listeners = new Set<() => void>();
-  const subscribeSessionClosed = (listener: () => void) => {
+  const listeners = new Set<SessionClosedListener>();
+  const subscribeSessionClosed = (listener: SessionClosedListener) => {
     listeners.add(listener);
     return () => listeners.delete(listener);
   };
@@ -109,6 +114,8 @@ export function renderApp(
         services={{
           users: services.users ?? fakeUsersService(),
           portal: services.portal ?? fakePortalService(),
+          // Sin plan indicado, el Premium sin PDF: como antes de la spec 011.
+          plan: services.plan ?? fakePlanService(),
         }}
       >
         <ProveedorSesion service={service} subscribeSessionClosed={subscribeSessionClosed}>
@@ -120,6 +127,8 @@ export function renderApp(
   return {
     ...result,
     service,
-    closeSession: () => act(() => listeners.forEach((listener) => listener())),
+    /** Con un mensaje, como el T-6 de una renovación rechazada (spec 011, RF-21). */
+    closeSession: (message?: string) =>
+      act(() => listeners.forEach((listener) => listener(message))),
   };
 }

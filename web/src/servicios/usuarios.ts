@@ -15,6 +15,8 @@ export interface AuditAuthor {
 /** Cuenta con su auditoría, como la devuelve la API (plan 001, `UsuarioDetalle`). Fechas en ISO. */
 export interface UsuarioDetalle extends UsuarioPropio {
   activo: boolean;
+  /** Integrante fuera del plan Básico (spec 011, RF-22). */
+  fueraDelPlan: boolean;
   ultimoIngreso: string | null;
   creadoEn: string;
   modificadoEn: string | null;
@@ -34,6 +36,8 @@ export interface ListUsersQuery {
   buscar?: string;
   rol?: Rol;
   activo?: boolean;
+  /** Solo las cuentas fuera del plan (spec 011, RF-22). */
+  fueraDelPlan?: true;
 }
 
 export interface CreateUserData {
@@ -81,6 +85,7 @@ function toQueryString(query: ListUsersQuery): string {
   if (search) params.set('buscar', search);
   if (query.rol !== undefined) params.set('rol', query.rol);
   if (query.activo !== undefined) params.set('activo', String(query.activo));
+  if (query.fueraDelPlan) params.set('fueraDelPlan', 'true');
   const text = params.toString();
   return text ? `?${text}` : '';
 }
@@ -107,6 +112,9 @@ export function createUsersService(http: HttpClient) {
     releaseEmail: (id: number) => http.post<void>(`${BASE}/${id}/liberar-email`),
 
     transferPrincipal: (id: number) => http.post<void>(`${BASE}/${id}/transferir-principal`),
+
+    /** "Habilitar en el plan" (spec 011, RF-23). */
+    enableInPlan: (id: number) => http.post<void>(`${BASE}/${id}/habilitar`),
   };
 }
 

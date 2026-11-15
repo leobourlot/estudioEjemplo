@@ -142,6 +142,7 @@ describe('edición de una cuenta (RF-27, RF-28)', () => {
     apellido: 'Gómez',
     debeCambiarContrasena: false,
     activo: true,
+    fueraDelPlan: false,
     ultimoIngreso: null,
     creadoEn: '2026-09-01T15:00:00.000Z',
     modificadoEn: null,

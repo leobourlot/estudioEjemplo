@@ -7,6 +7,7 @@ import {
   tipoMovimientoLabel,
   truncateDescription,
 } from '../servicios/presentacion-movimientos';
+import { usePlan } from './ProveedorPlan';
 import { TextoLiteral } from './TextoLiteral';
 import { CARD, TEXT_LINK } from './estilos-aplicacion';
 
@@ -27,6 +28,7 @@ export function FilaMovimiento({
   causaId: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const planPremium = usePlan().info?.plan !== 'basico';
   const preview = truncateDescription(movimiento.descripcion);
   const fecha = formatMovementDate(movimiento.fecha);
   const tipo = tipoMovimientoLabel(movimiento.tipo);
@@ -50,7 +52,8 @@ export function FilaMovimiento({
           </span>
         )}
         {/* Spec 010, RF-30: si tiene PDF. El cliente lo ve si ve el movimiento (RF-33). */}
-        {movimiento.tienePdf && (
+        {/* Spec 011, RF-12: con el plan Básico, sin la leyenda. */}
+        {movimiento.tienePdf && planPremium && (
           <span className={`${badgeClass} bg-slate-100 text-slate-700`}>PDF</span>
         )}
         {movimiento.anulado && (

@@ -16,6 +16,7 @@ import { RutasAplicacion } from '../RutasAplicacion';
 import { ApiError } from '../servicios/cliente-http';
 import { openPdfInPlace } from '../servicios/descarga-pdf';
 import type { Rol } from '../servicios/sesion';
+import { fakePlanService } from '../pruebas/plan-de-prueba';
 
 vi.mock('../servicios/descarga-pdf', () => ({ openPdfInPlace: vi.fn(), saveFile: vi.fn() }));
 
@@ -30,7 +31,15 @@ function renderPdf(path: string, rol: Rol | null, getPdf: () => Promise<unknown>
   });
   render(
     <MemoryRouter initialEntries={[path]}>
-      <ProveedorServicios services={{ users: fakeUsersService(), movimientos, jurisprudencia, portal }}>
+      <ProveedorServicios
+        services={{
+          users: fakeUsersService(),
+          movimientos,
+          jurisprudencia,
+          portal,
+          plan: fakePlanService(),
+        }}
+      >
         <ProveedorSesion service={session}>
           <RutasAplicacion />
         </ProveedorSesion>
@@ -45,7 +54,11 @@ describe('PaginaPdf y sus rutas', () => {
   beforeEach(() => vi.mocked(openPdfInPlace).mockClear());
 
   it('muestra "Abriendo el PDF…" y abre el PDF del movimiento del panel', async () => {
-    const { movimientos } = renderPdf('/panel/causas/3/movimientos/8/pdf', 'abogado', async () => ARCHIVO);
+    const { movimientos } = renderPdf(
+      '/panel/causas/3/movimientos/8/pdf',
+      'abogado',
+      async () => ARCHIVO,
+    );
 
     expect((await screen.findByText('Abriendo el PDF…')).getAttribute('role')).toBe('status');
     await waitFor(() => expect(openPdfInPlace).toHaveBeenCalledWith(ARCHIVO.blob));
@@ -53,28 +66,39 @@ describe('PaginaPdf y sus rutas', () => {
   });
 
   it('abre el PDF de un fallo', async () => {
-    const { jurisprudencia } = renderPdf('/panel/jurisprudencia/5/pdf', 'admin', async () => ARCHIVO);
+    const { jurisprudencia } = renderPdf(
+      '/panel/jurisprudencia/5/pdf',
+      'admin',
+      async () => ARCHIVO,
+    );
 
     await waitFor(() => expect(openPdfInPlace).toHaveBeenCalledWith(ARCHIVO.blob));
     expect(jurisprudencia.getPdf).toHaveBeenCalledWith(5);
   });
 
   it('abre el PDF de un movimiento del portal', async () => {
-    const { portal } = renderPdf('/portal/causas/3/movimientos/8/pdf', 'cliente', async () => ARCHIVO);
+    const { portal } = renderPdf(
+      '/portal/causas/3/movimientos/8/pdf',
+      'cliente',
+      async () => ARCHIVO,
+    );
 
     await waitFor(() => expect(openPdfInPlace).toHaveBeenCalledWith(ARCHIVO.blob));
     expect(portal.getPdf).toHaveBeenCalledWith('3', '8');
   });
 
-  it.each([404, 403])('ante un %i lleva al inicio de su sección con el aviso (RF-37)', async (status) => {
-    renderPdf('/panel/causas/3/movimientos/8/pdf', 'abogado', async () =>
-      Promise.reject(new ApiError(status, ['No existe ese PDF'])),
-    );
+  it.each([404, 403])(
+    'ante un %i lleva al inicio de su sección con el aviso (RF-37)',
+    async (status) => {
+      renderPdf('/panel/causas/3/movimientos/8/pdf', 'abogado', async () =>
+        Promise.reject(new ApiError(status, ['No existe ese PDF'])),
+      );
 
-    await findPanelHome();
-    expect(screen.getByRole('status').textContent).toBe('No existe ese PDF');
-    expect(openPdfInPlace).not.toHaveBeenCalled();
-  });
+      await findPanelHome();
+      expect(screen.getByRole('status').textContent).toBe('No existe ese PDF');
+      expect(openPdfInPlace).not.toHaveBeenCalled();
+    },
+  );
 
   it('el portal lleva al inicio del portal con el aviso', async () => {
     renderPdf('/portal/causas/3/movimientos/8/pdf', 'cliente', async () =>

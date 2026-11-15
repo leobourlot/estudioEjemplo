@@ -1,6 +1,7 @@
 import { fullName } from './presentacion';
 import type { UsuarioPropio } from './sesion';
 import type { UsuarioDetalle } from './usuarios';
+import { enableInPlanLabel, PLAN_TEXTS } from './plan';
 
 /**
  * Acciones sobre una cuenta (RF-24, RF-29 a RF-33) y quién las ve. Replica las reglas de la
@@ -9,7 +10,12 @@ import type { UsuarioDetalle } from './usuarios';
  */
 
 export type AccountAction =
-  'deactivate' | 'reactivate' | 'resetPassword' | 'releaseEmail' | 'transferPrincipal';
+  | 'deactivate'
+  | 'reactivate'
+  | 'resetPassword'
+  | 'releaseEmail'
+  | 'transferPrincipal'
+  | 'enableInPlan';
 
 export function availableActions(actor: UsuarioPropio, account: UsuarioDetalle): AccountAction[] {
   // Sobre la propia cuenta no se ofrece nada: la contraseña se cambia desde Mi cuenta.
@@ -18,6 +24,9 @@ export function availableActions(actor: UsuarioPropio, account: UsuarioDetalle):
   if (actor.rol === 'abogado' && account.rol !== 'cliente') return [];
   // Nadie más que el propio principal puede desactivarlo ni restablecerle la contraseña (RF-31).
   if (account.esPrincipal) return [];
+  // Spec 011, RF-23: una cuenta fuera del plan solo se desactiva o se habilita (los abogados no
+  // llegan acá: solo operan sobre clientes).
+  if (account.activo && account.fueraDelPlan) return ['deactivate', 'enableInPlan'];
 
   if (!account.activo) {
     // Liberar el email es solo para administradores (RF-24).
@@ -76,4 +85,18 @@ export const ACTION_TEXTS: Record<AccountAction, ActionText> = {
     needsTemporaryPassword: false,
     done: (account) => `${fullName(account)} es ahora el administrador principal`,
   },
+  enableInPlan: {
+    label: PLAN_TEXTS.enableInPlan,
+    description:
+      'La persona vuelve a poder ingresar, con su contraseña de siempre, y ocupa uno de los 2 lugares del plan Básico.',
+    needsTemporaryPassword: false,
+    done: () => 'Cuenta habilitada en el plan',
+  },
 };
+
+/** El nombre accesible de un botón de acción: T-16 lleva el nombre de la persona (spec 011). */
+export function actionAccessibleName(action: AccountAction, account: UsuarioDetalle): string {
+  return action === 'enableInPlan'
+    ? enableInPlanLabel(account.nombre, account.apellido)
+    : ACTION_TEXTS[action].label;
+}

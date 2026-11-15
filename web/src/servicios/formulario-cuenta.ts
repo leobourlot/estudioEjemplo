@@ -13,6 +13,7 @@ import {
   validateEmail,
   validateOptionalEmail,
 } from './validaciones';
+import { isStaffFull, type PlanInfo } from './plan';
 
 /**
  * Formulario de alta de una cuenta (RF-2, RF-3, RF-21, RF-22): validación con los mismos
@@ -211,4 +212,12 @@ export function buildCreateUserData(form: NewAccountForm): CreateUserData {
   if (!isBlank(form.telefono)) cliente.telefono = form.telefono.trim();
   if (!isBlank(form.domicilio)) cliente.domicilio = form.domicilio.trim();
   return { ...data, cliente };
+}
+
+/**
+ * Los roles que el formulario "Nueva cuenta" no ofrece (spec 011, RF-19): con el plan Básico y 2
+ * integrantes habilitados, administrador y abogado. Los clientes no tienen límite.
+ */
+export function unavailableRoles(plan: PlanInfo | null): Rol[] {
+  return isStaffFull(plan) ? ['admin', 'abogado'] : [];
 }
