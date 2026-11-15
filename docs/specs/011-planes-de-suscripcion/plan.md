@@ -27,7 +27,7 @@ El endpoint responde el plan y, según el plan, los integrantes habilitados o el
 - Con el plan Premium, quita todas las marcas (RF-25).
 - Con el plan Básico, si hay más de 2 integrantes habilitados, marca a los que exceden (RF-20).
 
-Lo llama `onApplicationBootstrap`. Si falla, por ejemplo porque todavía no se corrió la migración (el README indica que las migraciones se corren a mano después de desplegar), registra el error y deja la promesa en blanco para reintentar. No frena el arranque: así la api queda viva y se puede correr la migración desde la consola del servicio. El guard de autenticación, el ingreso y la renovación vuelven a llamar a `ensureApplied()` antes de decidir. Mientras el ajuste no termine bien, responden 503 "El sistema se está actualizando. Probá de nuevo en unos minutos", para que nadie entre fuera del plan.
+Lo llama `onApplicationBootstrap`. Si falla, por ejemplo porque todavía no se corrió la migración (el README indica que las migraciones se corren a mano después de desplegar), registra el error y deja la promesa en blanco para reintentar. No frena el arranque: así la api queda viva y se puede correr la migración desde la consola del servicio. El guard de autenticación, el ingreso y la renovación vuelven a llamar a `ensureApplied()` antes de decidir. Mientras el ajuste no termine bien, responden 503 T-17, para que nadie entre fuera del plan (caso límite de "Configuración" de la spec).
 
 *Alternativa descartada:* hacerlo en la migración. La migración no conoce el plan, y el plan cambia sin que haya migraciones nuevas.
 
@@ -75,7 +75,7 @@ El archivo tiene la dirección del sitio, el WhatsApp en sus dos formas (`+54 9 
 Contenido de `plan/`:
 - `reglas-plan.ts`: reglas puras, sin base.
   - Constantes: `MAX_STAFF_BASICO = 2`, `BYTES_PER_GB = 1_073_741_824`, `DEFAULT_PDF_SPACE_GB = 10`, `NEAR_LIMIT_RATIO = 0.9`.
-  - Mensajes: `PLAN_MESSAGES`, con T-4, T-5, T-6, T-9 y T-14 y el 503 de D5.
+  - Mensajes: `PLAN_MESSAGES`, con T-4, T-5, T-6, T-9, T-14 y T-17.
   - `selectOutsidePlan(integrantes)`: recibe los integrantes habilitados (`id`, `esPrincipal`, `creadoEn`) y devuelve los ids a marcar. Ordena por principal primero, después `creadoEn` y después `id`, y conserva los 2 primeros.
   - `exceedsPdfSpace(usado, nuevo, total)`: `usado + nuevo > total`.
 - `plan.service.ts`: el plan vigente (`plan`, `isPremium`), `ensureApplied()` (D5), `assertStaffSlot(manager)` (D7), `assertPdfSpace(manager, tamano)` (D7) y `summary()` para el endpoint.
@@ -145,7 +145,7 @@ Errores con el formato de siempre (`statusCode`, `message`, en español).
 | Ingreso o renovación de una cuenta fuera del plan | 403 en el ingreso, 401 en la renovación | T-6 |
 | Espacio para PDF completo | 409 | T-9 |
 | Acción no permitida sobre una cuenta fuera del plan, o agregarla a una causa | 409 | T-14 |
-| Ajuste del plan pendiente (D5) | 503 | "El sistema se está actualizando. Probá de nuevo en unos minutos" |
+| Ajuste del plan pendiente (D5) | 503 | T-17 |
 
 ### Plan — `GET /api/panel/plan` (roles `admin` y `abogado`) [RF-29, RF-31, D3]
 ```
@@ -247,7 +247,7 @@ No cierra sesiones: la siguiente acción de una cuenta marcada la rechaza el gua
 - `validateEnvironment` lee `PLAN` (obligatoria, `basico` o `premium`) y `ESPACIO_PDF_GB` (opcional, entero de 1 a 1.000, solo con `premium`), y con `MODO_DEMO=true` exige `premium`. `Environment` suma `PLAN: Plan` y `ESPACIO_PDF_BYTES: number`.
 - Los comandos de consola (`demo:restablecer`, `demo:marcar`, administrador principal) validan el mismo entorno, así que también necesitan `PLAN`. En Easypanel ya la tienen, porque corren en el contenedor del servicio.
 - **Demo:** con `PLAN=premium`, nada cambia. El restablecimiento vacía `usuarios` y la vuelve a cargar con `fueraDelPlan = 0` por defecto.
-- **e2e:** la utilidad de `test/utilidades/` que levanta la api acepta un plan (`crearAplicacion({ plan: 'basico' })`), que fija `process.env.PLAN` antes de construirla y lo restituye al terminar, como hace hoy `proteccion-demo.e2e-spec.ts` con `MODO_DEMO`. Así los tests del plan Básico no dependen de `.env.test`, que queda con `PLAN=premium`.
+- **e2e:** `createTestApp` (`test/utilidades/aplicacion-de-tests.ts`) acepta un plan y un espacio (`createTestApp({ plan: 'basico' })`, `createTestApp({ espacioPdfGb: 1 })`), que fijan `process.env.PLAN` y `process.env.ESPACIO_PDF_GB` antes de construirla. Como `process.loadEnvFile` no pisa las variables ya definidas, el valor del test gana sobre `.env.test`. Se restituyen al cerrar la app, como hace hoy `proteccion-demo.e2e-spec.ts` con `MODO_DEMO`. Para los tests de arranque, acepta también `keepTables: true`, que no vacía las tablas, así un segundo arranque encuentra las cuentas que dejó el primero. Así los tests del plan Básico no dependen de `.env.test`, que queda con `PLAN=premium`.
 
 ## Dependencias nuevas
 Ninguna. Los bloqueos usan `FOR UPDATE` de MySQL (D7). Los enlaces de WhatsApp reutilizan `whatsappUrl` (spec 007).

@@ -110,6 +110,7 @@ El dominio del sitio (un subdominio en el plan Básico, el dominio propio en el 
   - Una publicación existente, como la demo, o la configuración de desarrollo o de tests, se actualiza a esta versión sin indicar el plan: no arranca hasta indicarlo (RF-2). El README lo avisa.
   - Modo demo con el plan Básico: no arranca (RF-36).
   - Espacio para PDF indicado como 0, 1.001, 10,5 o "diez" con el plan Premium: no arranca. Con el plan Básico, se ignora (RF-27).
+  - Una publicación se actualiza a esta versión y todavía no se corrió la migración que agrega la marca de fuera del plan (RF-20), o el registro de esa marca falla por otro motivo: el sistema arranca igual, para que se pueda correr la migración desde la consola del servidor. Hasta que el registro se complete, el ingreso, la renovación de la sesión y toda acción del panel y del portal responden T-17, sin iniciar sesiones ni contar intentos. Así nadie ingresa fuera del plan. El sitio público sigue funcionando. Cuando el registro se completa, el sistema funciona sin volver a arrancarlo. El README lo indica en los pasos de publicación.
 - **Paso del plan Premium al Básico:**
   - Un integrante tenía abierto el listado de jurisprudencia: en su siguiente acción ve la pantalla T-2 (RF-3, RF-7).
   - Un integrante estaba cargando un movimiento con un PDF: al guardar, se rechaza todo con T-4. El formulario conserva lo escrito y descarta el archivo (RF-11; spec 010, RF-11).
@@ -233,6 +234,9 @@ Resueltas el 12/11/2026, en la clarificación:
 - Las excepciones a la spec 009 (RF-13), a la spec 010 (RF-33) y al principio 5 de la constitución se agregan con una nota en cada una.
 - El plan y el espacio en los archivos de configuración los agrega quien opera el servidor, a mano.
 
+Resuelta el 14/11/2026, en el plan:
+- Si la marca de fuera del plan no se puede registrar al arrancar (por ejemplo, sin la migración), el sistema arranca y responde T-17 hasta que se registra (casos límite, "Configuración").
+
 ## Anexo A — Textos
 - **T-1** Etiqueta en el menú: "Premium".
 - **T-2** Pantalla de jurisprudencia en el plan Básico:
@@ -259,3 +263,4 @@ Resueltas el 12/11/2026, en la clarificación:
 - **T-14** Acción sobre una cuenta fuera del plan: "Esta cuenta está fuera del plan Básico. Habilitala para modificarla."
 - **T-15** Valor del PDF en el historial de cambios con el plan Básico: "Disponible en el plan Premium".
 - **T-16** Botón en la consulta de una cuenta fuera del plan: "Habilitar en el plan". Para el lector de pantalla: "Habilitar a <nombre y apellido> en el plan Básico".
+- **T-17** Registro de fuera del plan pendiente: "El sistema se está actualizando. Probá de nuevo en unos minutos".
