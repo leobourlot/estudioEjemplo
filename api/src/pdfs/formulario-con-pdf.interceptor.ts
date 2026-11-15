@@ -2,6 +2,7 @@ import {
   BadRequestException,
   type CallHandler,
   type ExecutionContext,
+  ForbiddenException,
   Injectable,
   type NestInterceptor,
   PayloadTooLargeException,
@@ -10,6 +11,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerExceptions } from '@nestjs/platform-express/multer/multer/multer.constants.js';
 import type { Response } from 'express';
 import { lastValueFrom, type Observable, of } from 'rxjs';
+import { PlanService } from '../plan/plan.service.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 import type { RequestConPdf } from './archivo-pdf.decorator.js';
 import { MAX_PDF_BYTES, PDF_FORM_MARGIN_BYTES, PDF_MESSAGES } from './reglas-pdf.js';
 
@@ -87,16 +90,31 @@ function parseDatos(body: unknown): Record<string, unknown> {
  *
  * Nunca guarda, muestra ni registra el nombre del archivo ni el tipo informado (RF-8): descarta
  * `request.file` y solo conserva el contenido.
+ *
+ * Con el plan Básico (spec 011, RF-11; plan 011, D8): un `multipart/form-data` responde 403 T-4
+ * antes de leer el cuerpo, y cierra la conexión como en el 413; un JSON con `quitarPdf` también.
  */
 @Injectable()
 export class FormularioConPdfInterceptor implements NestInterceptor {
   private readonly upload: NestInterceptor = new UploadInterceptor();
 
+  constructor(private readonly plan: PlanService) {}
+
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
     const http = context.switchToHttp();
     const request = http.getRequest<RequestConPdf & { file?: { buffer: Buffer } }>();
     request.archivoPdf = null;
-    if (!request.is('multipart/form-data')) return next.handle();
+    if (!request.is('multipart/form-data')) {
+      const body = request.body as Record<string, unknown> | undefined;
+      if (!this.plan.isPremium && body?.quitarPdf !== undefined) {
+        throw new ForbiddenException(PLAN_MESSAGES.featureNotIncluded);
+      }
+      return next.handle();
+    }
+    if (!this.plan.isPremium) {
+      http.getResponse<Response>().setHeader('Connection', 'close');
+      throw new ForbiddenException(PLAN_MESSAGES.featureNotIncluded);
+    }
 
     const declared = Number(request.headers['content-length']);
     if (declared > MAX_PDF_BYTES + PDF_FORM_MARGIN_BYTES) {

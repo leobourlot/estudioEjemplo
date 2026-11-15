@@ -1,9 +1,16 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, type FindOptionsWhere } from 'typeorm';
 import { DemoProtectionService } from '../demo/proteccion-demo.service.js';
+import { PlanService } from '../plan/plan.service.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 import { Sesion } from '../usuarios/sesion.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { isValidDni } from '../usuarios/validadores/documentos.js';
@@ -63,8 +70,17 @@ export class AuthenticationService {
     private readonly passwords: PasswordsService,
     private readonly jwt: JwtService,
     private readonly demo: DemoProtectionService,
+    private readonly plan: PlanService,
   ) {
     this.dummyHash = this.passwords.hash(randomBytes(16).toString('hex'));
+  }
+
+  /**
+   * Antes del ingreso y de contar el intento (spec 011; plan 011, D5): si el ajuste de las cuentas
+   * no se completó, 503 T-17, sin crear sesión ni sumar un intento.
+   */
+  assertPlanApplied(): Promise<void> {
+    return this.plan.assertApplied();
   }
 
   /**
@@ -76,7 +92,7 @@ export class AuthenticationService {
     const credentials = where
       ? await this.users.findOne({
           where,
-          select: { id: true, contrasenaHash: true, activo: true, rol: true },
+          select: { id: true, contrasenaHash: true, activo: true, rol: true, fueraDelPlan: true },
         })
       : null;
     const passwordMatches = await this.passwords.verify(
@@ -86,6 +102,9 @@ export class AuthenticationService {
     if (!credentials || !passwordMatches || !credentials.activo) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
+    // Spec 011, RF-21: con la contraseña correcta, una cuenta fuera del plan recibe T-6 y no
+    // inicia sesión. El intento ya lo contó el controlador, exitoso o no.
+    if (credentials.fueraDelPlan) throw new ForbiddenException(PLAN_MESSAGES.outsidePlanLogin);
 
     const now = new Date();
     // Sesión única (RF-13): borrar las anteriores las cierra y además limpia las viejas.
@@ -116,6 +135,7 @@ export class AuthenticationService {
    * vencimiento según el rol. Si se presenta el secreto ya reemplazado, revoca la sesión.
    */
   async refresh(refreshToken: unknown): Promise<SessionTokens> {
+    await this.plan.assertApplied();
     const parsed = parseRefreshToken(refreshToken);
     if (!parsed) throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 
@@ -136,6 +156,10 @@ export class AuthenticationService {
     }
     if (!sameHash(presentedHash, session.tokenHash) || !session.usuario?.activo) {
       throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
+    }
+    // Spec 011, RF-21: la sesión de una cuenta fuera del plan se cierra con T-6.
+    if (session.usuario.fueraDelPlan) {
+      throw new UnauthorizedException(PLAN_MESSAGES.outsidePlanLogin);
     }
 
     const secret = createSessionSecret();

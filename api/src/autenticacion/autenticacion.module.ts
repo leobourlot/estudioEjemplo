@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { Environment } from '../configuracion/validar-entorno.js';
 import { DemoModule } from '../demo/demo.module.js';
+import { PlanModule } from '../plan/plan.module.js';
 import { Cliente } from '../usuarios/cliente.entity.js';
 import { Sesion } from '../usuarios/sesion.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
@@ -21,6 +22,7 @@ import { SessionController } from './sesion.controller.js';
   imports: [
     TypeOrmModule.forFeature([Usuario, Cliente, Sesion]),
     DemoModule,
+    PlanModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Environment, true>) => ({

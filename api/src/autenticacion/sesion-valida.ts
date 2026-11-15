@@ -11,7 +11,7 @@ export interface AccessTokenPayload {
 /**
  * La sesión del token de acceso, con su usuario, si es válida; si no, null (plan 007, "Contrato
  * de la API"). Válida es: token firmado y vigente, sesión existente, no revocada ni vencida, del
- * mismo usuario del token y con la cuenta activa. Solo lee: no extiende ni renueva nada. La usan
+ * mismo usuario del token y con la cuenta activa y dentro del plan (spec 011). Solo lee: no extiende ni renueva nada. La usan
  * el guard de autenticación, que después extiende la sesión (spec 001, RF-12 a RF-14), y el
  * estado de la sesión del sitio público, que no la extiende (spec 007, RF-31).
  */
@@ -32,7 +32,9 @@ export async function findValidSession(
     session.revocadaEn !== null ||
     session.venceEn.getTime() <= Date.now() ||
     session.usuarioId !== payload.sub ||
-    !session.usuario?.activo
+    !session.usuario?.activo ||
+    // Spec 011, RF-21: una cuenta fuera del plan pierde la sesión en su siguiente acción.
+    session.usuario.fueraDelPlan
   ) {
     return null;
   }

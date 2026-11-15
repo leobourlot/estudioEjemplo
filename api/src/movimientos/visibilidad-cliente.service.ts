@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ClientLinkService } from '../causas/vinculo-cliente.service.js';
 import { PdfsService } from '../pdfs/pdfs.service.js';
 import { movementPdfName } from '../pdfs/reglas-pdf.js';
+import { PlanService } from '../plan/plan.service.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { type MovimientoCliente, toMovimientoCliente } from './movimiento-detalle.js';
 import { Movimiento } from './movimiento.entity.js';
@@ -35,6 +36,8 @@ export class ClientVisibilityService {
     @InjectRepository(Usuario) private readonly usuarios: Repository<Usuario>,
     private readonly links: ClientLinkService,
     private readonly pdfs: PdfsService,
+    // Con el plan Básico, el cliente no ve nada de los PDF (spec 011, RF-13).
+    private readonly plan: PlanService,
   ) {}
 
   /**
@@ -58,7 +61,9 @@ export class ClientVisibilityService {
       take: PAGE_SIZE + 1,
     });
     return {
-      items: movimientos.slice(0, PAGE_SIZE).map((m) => toMovimientoCliente(m, ahora)),
+      items: movimientos
+        .slice(0, PAGE_SIZE)
+        .map((m) => toMovimientoCliente(m, ahora, { planPremium: this.plan.isPremium })),
       pagina,
       haySiguiente: movimientos.length > PAGE_SIZE,
     };
@@ -85,20 +90,22 @@ export class ClientVisibilityService {
     if (!movimiento || !(await this.canSeeCausa(clienteId, causaId))) {
       throw new NotFoundException(MOVIMIENTOS_MESSAGES.notFound);
     }
-    return toMovimientoCliente(movimiento, ahora);
+    return toMovimientoCliente(movimiento, ahora, { planPremium: this.plan.isPremium });
   }
 
   /**
    * El PDF de un movimiento que el cliente puede ver (spec 010, RF-33): el movimiento es visible,
    * no está anulado, pertenece a la causa indicada y el cliente está vinculado a ella. El PDF no
    * tiene visibilidad propia (RF-17). Si falla cualquiera de esas condiciones, o el movimiento no
-   * tiene PDF, devuelve null: el portal responde siempre el mismo 404 (RF-37).
+   * tiene PDF, devuelve null: el portal responde siempre el mismo 404 (RF-37). Con el plan Básico,
+   * también null, sin consultar (spec 011, RF-13).
    */
   async findVisiblePdf(
     clienteId: number,
     causaId: number,
     movimientoId: number,
   ): Promise<{ contenido: Buffer; nombre: string } | null> {
+    if (!this.plan.isPremium) return null;
     const movimiento = await this.movimientos.findOne({
       select: { id: true, fecha: true, tipo: true, pdfId: true },
       where: { id: movimientoId, causaId, visible: true, anulado: false },

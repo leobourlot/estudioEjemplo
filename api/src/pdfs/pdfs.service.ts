@@ -2,12 +2,15 @@ import { randomInt } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   PayloadTooLargeException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, type EntityManager, QueryFailedError } from 'typeorm';
 import type { Environment } from '../configuracion/validar-entorno.js';
+import { PlanService } from '../plan/plan.service.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { Pdf } from './pdf.entity.js';
 import { DEMO_PDF_LIMIT, generateCode, PDF_MESSAGES, validatePdfContent } from './reglas-pdf.js';
@@ -38,6 +41,7 @@ export class PdfsService {
   constructor(
     private readonly dataSource: DataSource,
     config: ConfigService<Environment, true>,
+    private readonly plan: PlanService,
   ) {
     this.demoMode = config.get('MODO_DEMO', { infer: true });
   }
@@ -51,12 +55,18 @@ export class PdfsService {
    * las filas y el hueco del final del índice (REPEATABLE READ), así que una segunda subida
    * simultánea espera a que termine esta transacción y después cuenta el PDF nuevo. Un reemplazo
    * no suma: quien llama borra el anterior antes de guardar el nuevo.
+   *
+   * Spec 011: con el plan Básico, 403 T-4 (segunda barrera; la primera es el interceptor). Con el
+   * Premium, después del tope de la demo, el espacio para PDF (RF-28): así el orden de los
+   * mensajes es primero el archivo (validado antes), después la demo y por último el espacio.
    */
   async create(manager: EntityManager, contenido: Buffer, actor: Usuario): Promise<PdfGuardado> {
+    if (!this.plan.isPremium) throw new ForbiddenException(PLAN_MESSAGES.featureNotIncluded);
     if (this.demoMode) {
       const guardados: unknown[] = await manager.query('SELECT id FROM pdfs FOR UPDATE');
       if (guardados.length >= DEMO_PDF_LIMIT) throw new ConflictException(PDF_MESSAGES.demoLimit);
     }
+    await this.plan.assertPdfSpace(manager, contenido.length);
     for (let intento = 1; ; intento++) {
       const datos = {
         tamano: contenido.length,

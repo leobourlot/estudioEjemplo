@@ -1,4 +1,5 @@
 import { FORBIDDEN_MESSAGE } from '../autenticacion/roles.guard.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 import type { Rol, Usuario } from './usuario.entity.js';
 
 /**
@@ -8,7 +9,8 @@ import type { Rol, Usuario } from './usuario.entity.js';
  */
 
 export type Actor = Pick<Usuario, 'id' | 'rol' | 'esPrincipal'>;
-export type Target = Pick<Usuario, 'id' | 'rol' | 'esPrincipal' | 'activo'>;
+export type Target = Pick<Usuario, 'id' | 'rol' | 'esPrincipal' | 'activo'> &
+  Partial<Pick<Usuario, 'fueraDelPlan'>>;
 
 export type AccountAction =
   | 'view'
@@ -17,7 +19,9 @@ export type AccountAction =
   | 'reactivate'
   | 'resetPassword'
   | 'releaseEmail'
-  | 'transferPrincipal';
+  | 'transferPrincipal'
+  /** Habilitar en el plan (spec 011, RF-23). */
+  | 'enableInPlan';
 
 /** Qué cambia una modificación, para las reglas que dependen del campo. */
 export interface AccountChange {
@@ -61,13 +65,25 @@ export function checkAccountAction(
   // Un abogado opera solo sobre clientes, sin liberar emails, transferir ni cambiar roles.
   if (actor.rol === 'abogado') {
     if (target.rol !== 'cliente') return forbidden();
-    if (action === 'releaseEmail' || action === 'transferPrincipal' || changesRole) {
+    if (
+      action === 'releaseEmail' ||
+      action === 'transferPrincipal' ||
+      action === 'enableInPlan' ||
+      changesRole
+    ) {
       return forbidden();
     }
     return null;
   }
 
   // Desde acá, el actor es administrador.
+
+  // Spec 011, RF-23: sobre una cuenta fuera del plan solo se consulta, se desactiva o se
+  // habilita. Si la cuenta tiene la marca y si hay lugar lo verifica el service.
+  if (action === 'enableInPlan') return null;
+  if (target.fueraDelPlan && action !== 'view' && action !== 'deactivate') {
+    return conflict(PLAN_MESSAGES.outsidePlanAccount);
+  }
   if (action === 'transferPrincipal') {
     if (!actor.esPrincipal) return forbidden();
     const isValidTarget = target.id !== actor.id && target.rol === 'admin' && target.activo;

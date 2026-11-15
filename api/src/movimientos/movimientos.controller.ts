@@ -18,6 +18,7 @@ import type { Response } from 'express';
 import { CurrentUser, Roles } from '../autenticacion/decoradores.js';
 import { ArchivoPdf, type ArchivoPdfRecibido } from '../pdfs/archivo-pdf.decorator.js';
 import { FormularioConPdfInterceptor } from '../pdfs/formulario-con-pdf.interceptor.js';
+import { SoloPremium } from '../plan/solo-premium.decorator.js';
 import { PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
 import { toPdfResponse } from '../pdfs/respuesta-pdf.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
@@ -66,8 +67,10 @@ export class MovimientosController {
 
   /**
    * El PDF del movimiento, como descarga (spec 010, RF-28; plan 010, "Entrega del PDF"). Ids no
-   * numéricos responden el mismo 404 que cualquier otro caso (RF-37).
+   * numéricos responden el mismo 404 que cualquier otro caso (RF-37). Con el plan Básico, 403 T-4
+   * sin consultar la causa, el movimiento ni el PDF (spec 011, RF-12).
    */
+  @SoloPremium()
   @Get(':movimientoId/pdf')
   async downloadPdf(
     @Param('causaId', PdfIdPipe) causaId: number,

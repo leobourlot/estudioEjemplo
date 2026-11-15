@@ -2,6 +2,7 @@ import type { TipoPersona } from '../usuarios/cliente.entity.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import type { Causa } from './causa.entity.js';
 import type { Parte } from './parte.entity.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 
 /**
  * Reglas de causas y partes como funciones puras, sin acceso a la base (plan 002, "Reglas
@@ -141,7 +142,8 @@ const conflict = (message: string): RuleDecision => ({ status: 409, message });
 
 // --- Abogados (RF-29 a RF-32) ---
 
-export type StaffMember = Pick<Usuario, 'id' | 'rol' | 'activo'>;
+export type StaffMember = Pick<Usuario, 'id' | 'rol' | 'activo'> &
+  Partial<Pick<Usuario, 'fueraDelPlan'>>;
 
 export interface LawyerAssignment {
   responsableId: number;
@@ -153,7 +155,8 @@ const isStaff = (member: StaffMember | undefined): member is StaffMember =>
 
 /**
  * Un integrante desactivado solo puede seguir en el lugar que ya ocupaba en la causa
- * (RF-32); asignarlo en un lugar nuevo se rechaza (RF-30).
+ * (RF-32); asignarlo en un lugar nuevo se rechaza (RF-30). Lo mismo un integrante fuera del
+ * plan Básico, con T-14 (spec 011, RF-26).
  */
 function checkMember(
   member: StaffMember | undefined,
@@ -162,6 +165,7 @@ function checkMember(
 ): RuleDecision {
   if (!isStaff(member)) return { status: 400, message: notStaffMessage };
   if (!member.activo && !alreadyThere) return conflict(CAUSAS_RULE_MESSAGES.memberDeactivated);
+  if (member.fueraDelPlan && !alreadyThere) return conflict(PLAN_MESSAGES.outsidePlanAccount);
   return null;
 }
 

@@ -20,6 +20,7 @@ import { ArchivoPdf, type ArchivoPdfRecibido } from '../pdfs/archivo-pdf.decorat
 import { FormularioConPdfInterceptor } from '../pdfs/formulario-con-pdf.interceptor.js';
 import { PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
 import { toPdfResponse } from '../pdfs/respuesta-pdf.js';
+import { SoloPremium } from '../plan/solo-premium.decorator.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { CreateFalloDto } from './dto/crear-fallo.dto.js';
 import { ListFallosQueryDto } from './dto/listar-fallos.dto.js';
@@ -47,9 +48,11 @@ const PdfIdPipe = new ParseIntPipe({
 /**
  * Jurisprudencia del estudio (plan 005). Solo administradores y abogados: los guards
  * globales de la spec 001 rechazan a clientes (403), a visitantes (401) y a cuentas con
- * cambio de contraseña pendiente (403) antes de llegar acá (RF-34).
+ * cambio de contraseña pendiente (403) antes de llegar acá (RF-34). Solo con el plan Premium:
+ * con el Básico, todo endpoint responde 403 T-4 sin consultar la base (spec 011, RF-8).
  */
 @Roles('admin', 'abogado')
+@SoloPremium()
 @Controller('panel/jurisprudencia')
 export class JurisprudenciaController {
   constructor(

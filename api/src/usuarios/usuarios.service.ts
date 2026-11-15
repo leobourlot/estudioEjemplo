@@ -17,6 +17,8 @@ import {
 } from 'typeorm';
 import { PasswordsService } from '../autenticacion/contrasenas.service.js';
 import { DemoProtectionService } from '../demo/proteccion-demo.service.js';
+import { PlanService } from '../plan/plan.service.js';
+import { PLAN_MESSAGES } from '../plan/reglas-plan.js';
 import { Cliente } from './cliente.entity.js';
 import type { CreateUserDto } from './dto/crear-usuario.dto.js';
 import type { ListUsersQueryDto } from './dto/listar-usuarios.dto.js';
@@ -78,6 +80,8 @@ export class UsersService {
     private readonly passwords: PasswordsService,
     // Con el modo demo, las cuentas de prueba no se modifican (spec 009, RF-19).
     private readonly demo: DemoProtectionService,
+    // Límite de integrantes del plan Básico (spec 011, RF-18).
+    private readonly plan: PlanService,
   ) {}
 
   /**
@@ -101,6 +105,12 @@ export class UsersService {
     if (rol !== undefined) builder.andWhere('usuario.rol = :rol', { rol });
     if (query.activo !== undefined)
       builder.andWhere('usuario.activo = :activo', { activo: query.activo });
+    if (query.fueraDelPlan) {
+      builder.andWhere('usuario.activo = :enPlan AND usuario.fueraDelPlan = :fuera', {
+        enPlan: true,
+        fuera: true,
+      });
+    }
     if (query.buscar) this.applySearch(builder, query.buscar);
 
     // La intercalación utf8mb4_unicode_ci ordena y busca sin distinguir mayúsculas ni tildes.
@@ -191,7 +201,9 @@ export class UsersService {
 
   /**
    * Desactivación (RF-29): la cuenta no se borra, para conservar la autoría de lo cargado;
-   * se cierra su sesión y ya no puede ingresar. Repetirla no es un error.
+   * se cierra su sesión y ya no puede ingresar. Repetirla no es un error. Desactivar una cuenta
+   * fuera del plan le quita la marca, y desactivar a un habilitado no habilita a nadie (spec 011,
+   * RF-23, RF-24).
    */
   async deactivate(actor: Usuario, id: number): Promise<void> {
     const target = await this.findWithDetail(id);
@@ -202,6 +214,7 @@ export class UsersService {
     await this.dataSource.transaction(async (manager) => {
       await manager.update(Usuario, target.id, {
         activo: false,
+        fueraDelPlan: false,
         modificadoPorId: actor.id,
         modificadoEn: now,
       });
@@ -216,7 +229,8 @@ export class UsersService {
   /**
    * Reactivación (RF-30): exige una contraseña temporal nueva, para que una contraseña que
    * pudo verse comprometida no vuelva a servir, y deja pendiente el cambio. Un integrante
-   * necesita email (RF-2); un cliente puede no tenerlo (RF-3, RF-24).
+   * necesita email (RF-2); un cliente puede no tenerlo (RF-3, RF-24). Un integrante respeta el
+   * límite del plan Básico (spec 011, RF-18).
    */
   async reactivate(actor: Usuario, id: number, temporaryPassword: string): Promise<void> {
     const target = await this.findWithDetail(id);
@@ -230,12 +244,41 @@ export class UsersService {
     const passwordViolation = this.passwords.findRuleViolation(temporaryPassword);
     if (passwordViolation) throw new BadRequestException(passwordViolation);
 
-    await this.users.update(target.id, {
-      activo: true,
-      contrasenaHash: await this.passwords.hash(temporaryPassword),
-      debeCambiarContrasena: true,
-      modificadoPorId: actor.id,
-      modificadoEn: new Date(),
+    const contrasenaHash = await this.passwords.hash(temporaryPassword);
+    await this.dataSource.transaction(async (manager) => {
+      if (target.rol !== 'cliente') await this.plan.assertStaffSlot(manager);
+      await manager.update(Usuario, target.id, {
+        activo: true,
+        fueraDelPlan: false,
+        contrasenaHash,
+        debeCambiarContrasena: true,
+        modificadoPorId: actor.id,
+        modificadoEn: new Date(),
+      });
+    });
+  }
+
+  /**
+   * Habilitar en el plan (spec 011, RF-23): le quita la marca a una cuenta fuera del plan si
+   * hay lugar (RF-18). No toca la contraseña ni las sesiones.
+   */
+  async enableInPlan(actor: Usuario, id: number): Promise<void> {
+    const target = await this.findWithDetail(id);
+    throwIfDenied(checkAccountAction(actor, target, 'enableInPlan'));
+    this.demo.assertModifiable(target);
+    if (!target.activo || !target.fueraDelPlan) {
+      throw new ConflictException(PLAN_MESSAGES.notOutsidePlan);
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      await this.plan.assertStaffSlot(manager);
+      // Condicionado a la marca: si otro pedido la quitó o desactivó la cuenta, no hace nada.
+      const result = await manager.update(
+        Usuario,
+        { id: target.id, activo: true, fueraDelPlan: true },
+        { fueraDelPlan: false, modificadoPorId: actor.id, modificadoEn: new Date() },
+      );
+      if (result.affected !== 1) throw new ConflictException(PLAN_MESSAGES.notOutsidePlan);
     });
   }
 
@@ -360,6 +403,8 @@ export class UsersService {
     let id: number;
     try {
       id = await this.dataSource.transaction(async (manager) => {
+        // Spec 011, RF-18: primero, para que el conteo vea las altas simultáneas.
+        if (dto.rol !== 'cliente') await this.plan.assertStaffSlot(manager);
         const usuario = await manager.save(Usuario, {
           rol: dto.rol,
           esPrincipal: false,

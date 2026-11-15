@@ -28,6 +28,7 @@ function user(id: number, overrides: Partial<Usuario> = {}): Usuario {
     contrasenaHash: '$2b$12$hash-secreto',
     debeCambiarContrasena: false,
     activo: true,
+    fueraDelPlan: false,
     ultimoIngreso: null,
     creadoPorId: null,
     creadoPor: null,
@@ -156,13 +157,14 @@ function causa(overrides: Partial<Causa> = {}): Causa {
 }
 
 describe('toIntegranteResumen', () => {
-  it('devuelve solo id, nombre, apellido, rol y si está activo', () => {
+  it('devuelve solo id, nombre, apellido, rol, si está activo y si está fuera del plan', () => {
     expect(toIntegranteResumen(user(4, { activo: false }))).toEqual({
       id: 4,
       nombre: 'Nombre4',
       apellido: 'Apellido4',
       rol: 'abogado',
       activo: false,
+      fueraDelPlan: false,
     });
   });
 });
@@ -229,7 +231,14 @@ describe('toCausaResumen (RF-36)', () => {
       esIncidente: false,
       expedientePrincipal: null,
       activa: true,
-      responsable: { id: 1, nombre: 'Marta', apellido: 'Robledo', rol: 'admin', activo: true },
+      responsable: {
+        id: 1,
+        nombre: 'Marta',
+        apellido: 'Robledo',
+        rol: 'admin',
+        activo: true,
+        fueraDelPlan: false,
+      },
       creadoEn: CREATED,
       modificadoEn: MODIFIED,
     });
@@ -253,8 +262,22 @@ describe('toCausaDetalle (RF-12)', () => {
 
   it('ordena los colaboradores por apellido y muestra si están desactivados', () => {
     expect(detalle.colaboradores).toEqual([
-      { id: 4, nombre: 'Nombre4', apellido: 'Alvarez', rol: 'abogado', activo: false },
-      { id: 5, nombre: 'Nombre5', apellido: 'Zapata', rol: 'abogado', activo: true },
+      {
+        id: 4,
+        nombre: 'Nombre4',
+        apellido: 'Alvarez',
+        rol: 'abogado',
+        activo: false,
+        fueraDelPlan: false,
+      },
+      {
+        id: 5,
+        nombre: 'Nombre5',
+        apellido: 'Zapata',
+        rol: 'abogado',
+        activo: true,
+        fueraDelPlan: false,
+      },
     ]);
   });
 

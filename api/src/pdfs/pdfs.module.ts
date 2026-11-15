@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PlanModule } from '../plan/plan.module.js';
 import { Pdf } from './pdf.entity.js';
 import { PdfsService } from './pdfs.service.js';
 
@@ -9,7 +10,7 @@ import { PdfsService } from './pdfs.service.js';
  * movimientos, jurisprudencia y portal.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Pdf])],
+  imports: [TypeOrmModule.forFeature([Pdf]), PlanModule],
   providers: [PdfsService],
   exports: [PdfsService],
 })

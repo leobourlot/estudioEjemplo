@@ -68,6 +68,13 @@ export class UsersController {
     return this.users.reactivate(actor, id, body.contrasenaTemporal);
   }
 
+  /** Habilitar en el plan (spec 011, RF-23). Solo administradores: lo decide el service. */
+  @Post(':id/habilitar')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  enableInPlan(@CurrentUser() actor: Usuario, @Param('id', UserIdPipe) id: number): Promise<void> {
+    return this.users.enableInPlan(actor, id);
+  }
+
   @Post(':id/restablecer-contrasena')
   @HttpCode(HttpStatus.NO_CONTENT)
   resetPassword(

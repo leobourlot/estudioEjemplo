@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Causa } from '../causas/causa.entity.js';
 import { CausasModule } from '../causas/causas.module.js';
 import { PdfsModule } from '../pdfs/pdfs.module.js';
+import { PlanModule } from '../plan/plan.module.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 import { CambioMovimiento } from './cambio-movimiento.entity.js';
 import { Movimiento } from './movimiento.entity.js';
@@ -17,6 +18,8 @@ import { ClientVisibilityService } from './visibilidad-cliente.service.js';
     CausasModule,
     // PdfsService: el PDF de cada movimiento (spec 010).
     PdfsModule,
+    // PlanService y @SoloPremium (spec 011).
+    PlanModule,
   ],
   controllers: [MovimientosController],
   providers: [MovimientosService, ClientVisibilityService],

@@ -6,6 +6,7 @@ import type { Environment } from '../src/configuracion/validar-entorno.js';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { Pdf } from '../src/pdfs/pdf.entity.js';
 import { PdfsService } from '../src/pdfs/pdfs.service.js';
+import { PlanService } from '../src/plan/plan.service.js';
 import type { Usuario } from '../src/usuarios/usuario.entity.js';
 import { createTestApp } from './utilidades/aplicacion-de-tests.js';
 import { createTestUser } from './utilidades/datos-de-prueba.js';
@@ -81,7 +82,7 @@ describe('PdfsService', () => {
   });
 
   it('si el código choca con uno guardado, genera otro (RF-6)', async () => {
-    const conAzar = new PdfsServiceConAzar(dataSource, configCon(false));
+    const conAzar = new PdfsServiceConAzar(dataSource, configCon(false), app.get(PlanService));
     conAzar.valores = valoresDe('AAAAAA');
     await create(minimalPdf(), conAzar);
 
@@ -92,7 +93,7 @@ describe('PdfsService', () => {
   });
 
   it('después de 5 choques, falla sin guardar nada', async () => {
-    const conAzar = new PdfsServiceConAzar(dataSource, configCon(false));
+    const conAzar = new PdfsServiceConAzar(dataSource, configCon(false), app.get(PlanService));
     conAzar.valores = valoresDe('CCCCCC');
     await create(minimalPdf(), conAzar);
 
@@ -102,7 +103,8 @@ describe('PdfsService', () => {
   });
 
   describe('tope de la demo (RF-41)', () => {
-    const conModoDemo = (modoDemo: boolean) => new PdfsService(dataSource, configCon(modoDemo));
+    const conModoDemo = (modoDemo: boolean) =>
+      new PdfsService(dataSource, configCon(modoDemo), app.get(PlanService));
 
     const guardarVarios = async (cantidad: number) => {
       for (let i = 0; i < cantidad; i++) await create(minimalPdf());

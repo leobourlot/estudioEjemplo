@@ -10,6 +10,7 @@ import { Causa } from '../causas/causa.entity.js';
 import type { ArchivoPdfRecibido } from '../pdfs/archivo-pdf.decorator.js';
 import { Pdf } from '../pdfs/pdf.entity.js';
 import { PdfsService } from '../pdfs/pdfs.service.js';
+import { PlanService } from '../plan/plan.service.js';
 import { movementPdfName, PDF_MESSAGES } from '../pdfs/reglas-pdf.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { CambioMovimiento } from './cambio-movimiento.entity.js';
@@ -91,6 +92,8 @@ export class MovimientosService {
     @InjectRepository(Movimiento) private readonly movimientos: Repository<Movimiento>,
     @InjectRepository(Causa) private readonly causas: Repository<Causa>,
     private readonly pdfs: PdfsService,
+    // Respuestas según el plan (spec 011, RF-12, RF-16).
+    private readonly plan: PlanService,
   ) {}
 
   /**
@@ -350,7 +353,9 @@ export class MovimientosService {
       relations: DETAIL_RELATIONS,
     });
     if (!movimiento) throw new NotFoundException(MOVIMIENTOS_MESSAGES.notFound);
-    return toMovimientoDetalle(movimiento, causa.activa);
+    return toMovimientoDetalle(movimiento, causa.activa, new Date(), {
+      planPremium: this.plan.isPremium,
+    });
   }
 
   private async findCausa(causaId: number): Promise<Pick<Causa, 'id' | 'activa'>> {

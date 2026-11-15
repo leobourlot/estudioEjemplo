@@ -7,11 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Environment } from '../configuracion/validar-entorno.js';
 import { DNIS_CUENTAS_DEMO } from '../demo/cuentas-demo.js';
 import { DEMO_ACCOUNT_MESSAGE, DemoProtectionService } from '../demo/proteccion-demo.service.js';
+import type { PlanService } from '../plan/plan.service.js';
 import type { Sesion } from '../usuarios/sesion.entity.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import type { AccessTokenPayload } from './autenticacion.guard.js';
 import { AuthenticationService, INVALID_CREDENTIALS_MESSAGE } from './autenticacion.service.js';
 import type { PasswordsService } from './contrasenas.service.js';
+
+/** El ajuste de las cuentas del plan ya hecho (spec 011; plan 011, D5). */
+const planReady = { assertApplied: vi.fn().mockResolvedValue(undefined) } as unknown as PlanService;
 
 const SECRET = 'secreto-de-tests-con-mas-de-32-caracteres';
 const NOW = new Date('2026-10-02T12:00:00-03:00');
@@ -72,6 +76,7 @@ describe('AuthenticationService.login', () => {
       passwords as unknown as PasswordsService,
       jwt,
       demoOff,
+      planReady,
     );
     givenUser({ contrasenaHash: STORED_HASH, activo: true });
   });
@@ -245,6 +250,7 @@ describe('AuthenticationService.refresh', () => {
       { hash: vi.fn().mockResolvedValue('$2b$12$hash-ficticio') } as unknown as PasswordsService,
       jwt,
       demoOff,
+      planReady,
     );
   });
 
@@ -297,6 +303,7 @@ describe('AuthenticationService.sessionSection (spec 007, RF-31)', () => {
       { hash: vi.fn().mockResolvedValue('$2b$12$hash-ficticio') } as unknown as PasswordsService,
       jwt,
       demoOff,
+      planReady,
     );
   });
 
@@ -361,6 +368,7 @@ describe('AuthenticationService.changePassword en modo demo (spec 009, RF-19)', 
       passwords as unknown as PasswordsService,
       jwt,
       demoProtection(modoDemo),
+      planReady,
     );
     return { service, users, sessions, passwords };
   }

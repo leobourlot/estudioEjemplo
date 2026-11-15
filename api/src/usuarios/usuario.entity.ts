@@ -55,6 +55,11 @@ export class Usuario {
   @Column({ type: 'boolean', default: true })
   activo: boolean;
 
+  // Integrante fuera del plan Básico (spec 011, RF-20). Lo pone y lo quita PlanService; el
+  // principal nunca lo tiene y solo una cuenta activa de integrante puede tenerlo.
+  @Column({ type: 'boolean', default: false })
+  fueraDelPlan: boolean;
+
   @Column({ type: 'datetime', nullable: true })
   ultimoIngreso: Date | null;
 

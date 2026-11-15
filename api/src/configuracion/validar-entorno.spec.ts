@@ -8,7 +8,10 @@ const validEnvironment = {
   DB_DATABASE: 'estudio_desarrollo',
   JWT_SECRET: 'x'.repeat(32),
   FRONTEND_ORIGINS: 'https://estudio.com,https://www.estudio.com',
+  PLAN: 'premium',
 };
+
+const GB = 1_073_741_824;
 
 function withoutVariable(name: string): Record<string, unknown> {
   const environment: Record<string, unknown> = { ...validEnvironment };
@@ -29,6 +32,67 @@ describe('validateEnvironment', () => {
       TRUST_PROXY_HOPS: 0,
       FRONTEND_ORIGINS: ['https://estudio.com', 'https://www.estudio.com'],
       MODO_DEMO: false,
+      PLAN: 'premium',
+      ESPACIO_PDF_BYTES: 10 * GB,
+    });
+  });
+
+  describe('PLAN (spec 011, RF-1, RF-2)', () => {
+    it.each(['basico', 'premium'])('acepta "%s"', (plan) => {
+      expect(validateEnvironment({ ...validEnvironment, PLAN: plan }).PLAN).toBe(plan);
+    });
+
+    it('falla nombrando la variable cuando falta: no hay plan por defecto', () => {
+      expect(() => validateEnvironment(withoutVariable('PLAN'))).toThrow('Falta la variable PLAN');
+    });
+
+    it.each(['Premium', 'BASICO', 'gratis', 'básico'])('rechaza "%s"', (plan) => {
+      expect(() => validateEnvironment({ ...validEnvironment, PLAN: plan })).toThrow(
+        'PLAN debe ser basico o premium',
+      );
+    });
+  });
+
+  describe('ESPACIO_PDF_GB (spec 011, RF-27)', () => {
+    it.each([
+      ['1', GB],
+      ['10', 10 * GB],
+      ['1000', 1000 * GB],
+    ])('con el plan Premium acepta "%s" GB', (value, bytes) => {
+      expect(
+        validateEnvironment({ ...validEnvironment, ESPACIO_PDF_GB: value }).ESPACIO_PDF_BYTES,
+      ).toBe(bytes);
+    });
+
+    it.each(['0', '1001', '10,5', '10.5', 'diez', '-1', '1e2'])(
+      'con el plan Premium rechaza "%s"',
+      (value) => {
+        expect(() => validateEnvironment({ ...validEnvironment, ESPACIO_PDF_GB: value })).toThrow(
+          'ESPACIO_PDF_GB debe ser un número entero de 1 a 1000',
+        );
+      },
+    );
+
+    it('con el plan Básico ignora un valor inválido', () => {
+      expect(() =>
+        validateEnvironment({ ...validEnvironment, PLAN: 'basico', ESPACIO_PDF_GB: 'diez' }),
+      ).not.toThrow();
+    });
+  });
+
+  describe('modo demo y plan (spec 011, RF-36)', () => {
+    it('falla con MODO_DEMO=true y el plan Básico', () => {
+      expect(() =>
+        validateEnvironment({ ...validEnvironment, MODO_DEMO: 'true', PLAN: 'basico' }),
+      ).toThrow('MODO_DEMO=true exige PLAN=premium');
+    });
+
+    it('arranca con MODO_DEMO=true y el plan Premium', () => {
+      expect(validateEnvironment({ ...validEnvironment, MODO_DEMO: 'true' }).MODO_DEMO).toBe(true);
+    });
+
+    it('con el modo demo apagado acepta el plan Básico', () => {
+      expect(validateEnvironment({ ...validEnvironment, PLAN: 'basico' }).PLAN).toBe('basico');
     });
   });
 

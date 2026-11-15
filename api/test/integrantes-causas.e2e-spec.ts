@@ -72,9 +72,23 @@ describe('GET /api/panel/causas/integrantes', () => {
     const response = await get(lawyerSession).expect(200);
 
     expect(response.body).toEqual([
-      { id: lawyer.id, nombre: 'Juan', apellido: 'Álvarez', rol: 'abogado', activo: true },
+      {
+        id: lawyer.id,
+        nombre: 'Juan',
+        apellido: 'Álvarez',
+        rol: 'abogado',
+        activo: true,
+        fueraDelPlan: false,
+      },
       expect.objectContaining({ nombre: 'Bruno', apellido: 'Méndez', activo: false }),
-      { id: admin.id, nombre: 'Carla', apellido: 'Saavedra', rol: 'admin', activo: true },
+      {
+        id: admin.id,
+        nombre: 'Carla',
+        apellido: 'Saavedra',
+        rol: 'admin',
+        activo: true,
+        fueraDelPlan: false,
+      },
     ]);
   });
 

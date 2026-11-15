@@ -3,11 +3,15 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IsNull, type Repository } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlanService } from '../plan/plan.service.js';
 import type { Sesion } from '../usuarios/sesion.entity.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { AuthenticationGuard, type AuthenticatedRequest } from './autenticacion.guard.js';
 import { ACCESS_TOKEN_COOKIE } from './constantes.js';
 import { IS_PUBLIC_KEY } from './decoradores.js';
+
+/** El ajuste de las cuentas del plan ya hecho (spec 011; plan 011, D5). */
+const planReady = { assertApplied: vi.fn().mockResolvedValue(undefined) } as unknown as PlanService;
 
 const SECRET = 'secreto-de-tests-con-mas-de-32-caracteres';
 const DAY = 24 * 60 * 60 * 1000;
@@ -52,7 +56,12 @@ describe('AuthenticationGuard', () => {
       findOne: vi.fn().mockResolvedValue(buildSession()),
       update: vi.fn().mockResolvedValue({ affected: 1 }),
     };
-    guard = new AuthenticationGuard(reflector, jwt, sessions as unknown as Repository<Sesion>);
+    guard = new AuthenticationGuard(
+      reflector,
+      jwt,
+      sessions as unknown as Repository<Sesion>,
+      planReady,
+    );
   });
 
   afterEach(() => {

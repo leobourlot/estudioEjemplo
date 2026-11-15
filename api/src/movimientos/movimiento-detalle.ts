@@ -87,6 +87,29 @@ export interface MovimientoCliente {
   tienePdf: boolean;
 }
 
+/**
+ * Con el plan Básico, el valor de cada cambio del PDF en el historial (spec 011, RF-16): la web
+ * muestra T-15 en su lugar. Lo guardado en movimiento_cambios no cambia.
+ */
+export const PDF_HIDDEN_BY_PLAN = 'plan-premium';
+
+/** Opciones del plan para las respuestas de movimientos (spec 011; plan 011, D8). */
+export interface PlanOptions {
+  /** Con false (plan Básico), ningún dato del PDF salvo `tienePdf` en el panel. */
+  planPremium: boolean;
+}
+
+const PREMIUM: PlanOptions = { planPremium: true };
+
+/** Los cambios de un movimiento con los valores del PDF reemplazados por la marca (RF-16). */
+function hidePdfChanges(cambios: CambioCampo[]): CambioCampo[] {
+  return cambios.map((cambio) =>
+    cambio.campo === 'pdf'
+      ? { ...cambio, anterior: PDF_HIDDEN_BY_PLAN, nuevo: PDF_HIDDEN_BY_PLAN }
+      : cambio,
+  );
+}
+
 export function toAutorResumen(usuario: Usuario): AutorResumen {
   return {
     id: usuario.id,
@@ -118,12 +141,15 @@ export function toMovimientoResumen(
 
 /**
  * Espera el movimiento con creadoPor, modificadoPor, cambios.usuario y pdf.subidoPor cargados.
- * Los cambios van del más reciente al más antiguo (RF-22).
+ * Los cambios van del más reciente al más antiguo (RF-22). Con el plan Básico, `pdf` es null y los
+ * cambios del PDF llevan la marca PDF_HIDDEN_BY_PLAN; `tienePdf` sigue, para el aviso T-11 (spec
+ * 011, RF-12, RF-15, RF-16).
  */
 export function toMovimientoDetalle(
   movimiento: Movimiento,
   causaActiva: boolean,
   ahora: Date = new Date(),
+  { planPremium }: PlanOptions = PREMIUM,
 ): MovimientoDetalle {
   const { texto, origen } = visibleText(movimiento);
   return {
@@ -135,14 +161,15 @@ export function toMovimientoDetalle(
     origenTextoVisible: origen,
     modificadoPor: movimiento.modificadoPor ? toAutorResumen(movimiento.modificadoPor) : null,
     modificadoEn: movimiento.modificadoEn,
-    pdf: movimiento.pdf
-      ? {
-          codigo: movimiento.pdf.codigo,
-          tamano: movimiento.pdf.tamano,
-          subidoPor: toAutorResumen(movimiento.pdf.subidoPor),
-          subidoEn: movimiento.pdf.subidoEn,
-        }
-      : null,
+    pdf:
+      planPremium && movimiento.pdf
+        ? {
+            codigo: movimiento.pdf.codigo,
+            tamano: movimiento.pdf.tamano,
+            subidoPor: toAutorResumen(movimiento.pdf.subidoPor),
+            subidoEn: movimiento.pdf.subidoEn,
+          }
+        : null,
     cambios: [...movimiento.cambios]
       .sort((a, b) => b.id - a.id)
       .map((cambio) => ({
@@ -150,14 +177,19 @@ export function toMovimientoDetalle(
         accion: cambio.accion,
         usuario: toAutorResumen(cambio.usuario),
         fechaHora: cambio.fechaHora,
-        cambios: cambio.cambios,
+        cambios: planPremium ? cambio.cambios : hidePdfChanges(cambio.cambios),
       })),
   };
 }
 
+/**
+ * Con el plan Básico, el cliente no recibe ninguna señal de un PDF: `tienePdf` es false (spec 011,
+ * RF-13).
+ */
 export function toMovimientoCliente(
   movimiento: Movimiento,
   ahora: Date = new Date(),
+  { planPremium }: PlanOptions = PREMIUM,
 ): MovimientoCliente {
   return {
     id: movimiento.id,
@@ -165,6 +197,6 @@ export function toMovimientoCliente(
     tipo: movimiento.tipo,
     texto: visibleText(movimiento).texto,
     esFechaFutura: isFutureDate(movimiento.fecha, ahora),
-    tienePdf: movimiento.pdfId !== null,
+    tienePdf: planPremium && movimiento.pdfId !== null,
   };
 }

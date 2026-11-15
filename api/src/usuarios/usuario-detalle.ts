@@ -10,6 +10,8 @@ export interface AuditAuthor {
 /** Respuesta de la gestión de cuentas (plan 001, `UsuarioDetalle`): datos y auditoría (RF-4, RF-34). */
 export interface UsuarioDetalle extends UsuarioPropio {
   activo: boolean;
+  /** Integrante fuera del plan Básico (spec 011, RF-22). */
+  fueraDelPlan: boolean;
   ultimoIngreso: Date | null;
   creadoEn: Date;
   modificadoEn: Date | null;
@@ -25,6 +27,7 @@ export function toUsuarioDetalle(usuario: Usuario): UsuarioDetalle {
   return {
     ...toUsuarioPropio(usuario),
     activo: usuario.activo,
+    fueraDelPlan: usuario.fueraDelPlan,
     ultimoIngreso: usuario.ultimoIngreso,
     creadoEn: usuario.creadoEn,
     modificadoEn: usuario.modificadoEn,

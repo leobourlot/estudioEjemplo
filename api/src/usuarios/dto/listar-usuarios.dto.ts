@@ -39,4 +39,9 @@ export class ListUsersQueryDto {
     ),
   )
   activo?: boolean;
+
+  /** Solo las cuentas activas fuera del plan (spec 011, RF-22). Solo se acepta true. */
+  @Transform(({ value }) => (value === 'true' ? true : value))
+  @Rule(optional((value) => (value === true ? null : 'El filtro fueraDelPlan debe ser true')))
+  fueraDelPlan?: true;
 }

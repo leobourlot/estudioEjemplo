@@ -17,6 +17,8 @@ export interface IntegranteResumen {
   apellido: string;
   rol: Rol;
   activo: boolean;
+  /** Integrante fuera del plan Básico: no se ofrece para agregar (spec 011, RF-26). */
+  fueraDelPlan: boolean;
 }
 
 export interface ParteDetalle {
@@ -83,6 +85,7 @@ export function toIntegranteResumen(usuario: Usuario): IntegranteResumen {
     apellido: usuario.apellido,
     rol: usuario.rol,
     activo: usuario.activo,
+    fueraDelPlan: usuario.fueraDelPlan,
   };
 }
 

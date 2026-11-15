@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Request } from 'express';
 import { IsNull, Repository } from 'typeorm';
+import { PlanService } from '../plan/plan.service.js';
 import { Sesion } from '../usuarios/sesion.entity.js';
 import type { Usuario } from '../usuarios/usuario.entity.js';
 import { ACCESS_TOKEN_COOKIE, INVALID_SESSION_MESSAGE, sessionTtlMs } from './constantes.js';
@@ -36,6 +37,7 @@ export class AuthenticationGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
     @InjectRepository(Sesion) private readonly sessions: Repository<Sesion>,
+    private readonly plan: PlanService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -44,6 +46,9 @@ export class AuthenticationGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) return true;
+
+    // Spec 011 (plan 011, D5): sin el ajuste de las cuentas completo, 503 T-17.
+    await this.plan.assertApplied();
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const session = await findValidSession(

@@ -72,8 +72,8 @@ describe('migración que quita la visibilidad del PDF', () => {
     await dataSource?.destroy();
   });
 
-  it('es la última migración', () => {
-    expect(MIGRATIONS.at(-1)).toBe(QuitarVisibilidadDelPdf1794441600000);
+  it('está en la lista de migraciones', () => {
+    expect(MIGRATIONS).toContain(QuitarVisibilidadDelPdf1794441600000);
   });
 
   it('up quita la visibilidad del PDF de los movimientos', async () => {
@@ -91,7 +91,10 @@ describe('migración que quita la visibilidad del PDF', () => {
     const ocultoConPdf = await insertMovement(false, 'OCU001');
     const visibleSinPdf = await insertMovement(true, null);
 
-    await dataSource.undoLastMigration();
+    // Deshace esta migración y las posteriores (spec 011 en adelante).
+    const fromVisibility =
+      MIGRATIONS.length - MIGRATIONS.indexOf(QuitarVisibilidadDelPdf1794441600000);
+    for (let index = 0; index < fromVisibility; index++) await dataSource.undoLastMigration();
 
     const rows: { id: number; pdfVisible: number }[] = await queryRunner.query(
       'SELECT id, pdfVisible FROM movimientos ORDER BY id',

@@ -41,6 +41,8 @@ export class SessionController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<UsuarioPropio> {
+    // Spec 011 (plan 011, D5): antes de contar el intento.
+    await this.authentication.assertPlanApplied();
     // request.ip ya es la IP real del usuario gracias a `trust proxy` (configureApp).
     if (!this.limiter.consumeAttempt(request.ip ?? '', body.documento)) {
       throw new HttpException(TOO_MANY_ATTEMPTS_MESSAGE, HttpStatus.TOO_MANY_REQUESTS);

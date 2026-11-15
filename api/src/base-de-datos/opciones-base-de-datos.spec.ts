@@ -13,6 +13,8 @@ const environment: Environment = {
   TRUST_PROXY_HOPS: 0,
   FRONTEND_ORIGINS: ['http://localhost:5173'],
   MODO_DEMO: false,
+  PLAN: 'premium',
+  ESPACIO_PDF_BYTES: 10_737_418_240,
 };
 
 describe('buildDataSourceOptions', () => {

@@ -7,6 +7,7 @@ import { JurisprudenciaModule } from './jurisprudencia/jurisprudencia.module.js'
 import { ModelosEscritosModule } from './modelos-escritos/modelos-escritos.module.js';
 import { MovimientosModule } from './movimientos/movimientos.module.js';
 import { PdfsModule } from './pdfs/pdfs.module.js';
+import { PlanModule } from './plan/plan.module.js';
 import { PortalModule } from './portal/portal.module.js';
 import { UsersModule } from './usuarios/usuarios.module.js';
 
@@ -14,6 +15,7 @@ import { UsersModule } from './usuarios/usuarios.module.js';
   imports: [
     ConfigurationModule,
     DatabaseModule,
+    PlanModule,
     AuthenticationModule,
     UsersModule,
     CausasModule,

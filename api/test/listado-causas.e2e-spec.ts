@@ -128,6 +128,7 @@ describe('GET /api/panel/causas (listado y filtros)', () => {
         apellido: 'Méndez',
         rol: 'abogado',
         activo: false,
+        fueraDelPlan: false,
       },
       creadoEn: expect.any(String),
       modificadoEn: null,
