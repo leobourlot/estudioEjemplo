@@ -10,13 +10,12 @@ import { errorMessage } from '../servicios/cliente-http';
 import { CONTRASENA_DEMO, type CuentaDemo } from '../servicios/cuentas-demo';
 import { DEMO_MODE } from '../servicios/modo-demo';
 import { APP_TITLES } from '../servicios/rutas-sitio';
-import { resolveLandingRoute } from '../servicios/sesion';
+import { loginFormProblem, resolveLandingRoute } from '../servicios/sesion';
 import { TEXTOS_INGRESO } from '../servicios/textos-aplicacion';
 
-const EMPTY_FIELDS_MESSAGE = 'Completá el DNI o CUIT y la contraseña';
-
 /**
- * Ingreso con DNI o CUIT y contraseña (RF-8 a RF-10). Muestra los mensajes de la API tal cual
+ * Ingreso con DNI o CUIT y contraseña (RF-8 a RF-10). Antes de enviar, avisa si falta un dato
+ * o si se escribió un email. Muestra los mensajes de la API tal cual
  * (credenciales incorrectas, demasiados intentos) y, al ingresar, lleva a donde indica
  * resolveLandingRoute: el cambio de contraseña pendiente o el inicio de la sección. Arriba, el
  * logo y el nombre del estudio llevan al sitio público, y el botón de WhatsApp abre la
@@ -49,8 +48,9 @@ export function PaginaIngreso() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (documento.trim() === '' || contrasena === '') {
-      setError(EMPTY_FIELDS_MESSAGE);
+    const problem = loginFormProblem(documento, contrasena);
+    if (problem) {
+      setError(problem);
       return;
     }
     setError(null);

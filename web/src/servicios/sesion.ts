@@ -37,8 +37,7 @@ export const ROUTES = {
 } as const;
 
 export type AccessDecision =
-  | { allowed: true }
-  | { allowed: false; redirectTo: string; notice?: string };
+  { allowed: true } | { allowed: false; redirectTo: string; notice?: string };
 
 /** Aviso al llevar a un usuario desde un PDF que no puede ver a su inicio (spec 010, RF-37). */
 export const PDF_NOT_FOUND_NOTICE = 'No existe ese PDF';
@@ -57,6 +56,20 @@ const isUnder = (path: string, section: string) =>
 
 const sectionOf = (usuario: UsuarioPropio) =>
   usuario.rol === 'cliente' ? ROUTES.portal : ROUTES.panel;
+
+export const LOGIN_MESSAGES = {
+  emptyFields: 'Completá el DNI o CUIT y la contraseña',
+  email: 'Se ingresa con el DNI (o el CUIT de tu empresa), no con el email',
+} as const;
+
+/**
+ * Problema del formulario de ingreso que se ve antes de enviarlo, o null (RF-8, RF-9). Un
+ * email se detecta por la @: solo mira lo escrito, así que no revela nada de las cuentas.
+ */
+export function loginFormProblem(documento: string, contrasena: string): string | null {
+  if (documento.trim() === '' || contrasena === '') return LOGIN_MESSAGES.emptyFields;
+  return documento.includes('@') ? LOGIN_MESSAGES.email : null;
+}
 
 /** A dónde va un usuario después de ingresar (RF-8): el cambio pendiente tiene prioridad (RF-11). */
 export function resolveLandingRoute(usuario: UsuarioPropio): string {

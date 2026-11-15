@@ -16,8 +16,7 @@ export function PreguntaFalloRepetido({
 }) {
   const { fallo } = question;
   return (
-    <div className="space-y-2">
-      <PreguntaConfirmacion question={question} onAnswer={onAnswer} />
+    <PreguntaConfirmacion question={question} onAnswer={onAnswer}>
       {fallo && (
         <p
           aria-label="Fallo con el que coincide"
@@ -38,6 +37,6 @@ export function PreguntaFalloRepetido({
           </a>
         </p>
       )}
-    </div>
+    </PreguntaConfirmacion>
   );
 }

@@ -133,6 +133,41 @@ export const hasOnlySingleLineCharacters = (value: string) => SINGLE_LINE_CHARAC
 /** Sumario y texto del buscador, ya convertidos (RF-5, RF-24). */
 export const hasOnlySumarioCharacters = (value: string) => SUMARIO_CHARACTERS.test(value);
 
+/** Cuántos caracteres rechazados nombra como máximo el mensaje del formulario (RF-8). */
+export const MAX_LISTED_CHARACTERS = 10;
+
+/** Cómo se nombra un carácter rechazado que no se ve. */
+export const INVISIBLE_CHARACTER_LABEL = '(carácter invisible)';
+
+// Controles, formatos, separadores y marcas sueltas: no se ven al mostrarlos.
+const INVISIBLE_CHARACTER = /^[\p{C}\p{Z}\p{M}]$/u;
+
+// Los selectores de variante acompañan a un emoji, que ya se nombra solo.
+const VARIATION_SELECTOR = /^\p{Variation_Selector}$/u;
+
+/**
+ * Caracteres de un texto ya convertido que la regla no acepta, sin repetir y en el orden en
+ * que aparecen, hasta MAX_LISTED_CHARACTERS. Sirve para ubicarlos en un texto largo (RF-8).
+ */
+function rejectedCharacters(value: string, allowed: RegExp): string[] {
+  const found: string[] = [];
+  for (const character of new Set(value)) {
+    if (allowed.test(character) || VARIATION_SELECTOR.test(character)) continue;
+    const shown = INVISIBLE_CHARACTER.test(character) ? INVISIBLE_CHARACTER_LABEL : character;
+    if (!found.includes(shown)) found.push(shown);
+    if (found.length === MAX_LISTED_CHARACTERS) break;
+  }
+  return found;
+}
+
+/** Los que rechazan la carátula, el tribunal, el número y las palabras clave (RF-4, RF-10). */
+export const rejectedSingleLineCharacters = (value: string) =>
+  rejectedCharacters(value, SINGLE_LINE_CHARACTERS);
+
+/** Los que rechaza el sumario (RF-5). */
+export const rejectedSumarioCharacters = (value: string) =>
+  rejectedCharacters(value, SUMARIO_CHARACTERS);
+
 /** Largo en caracteres (puntos de código), como lo cuentan la API y la base. */
 export const textLength = (value: string) => [...value].length;
 

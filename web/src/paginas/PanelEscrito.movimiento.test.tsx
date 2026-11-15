@@ -128,8 +128,12 @@ describe('PanelEscrito: registrar como movimiento (RF-54, RF-55)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Guardar movimiento' }));
 
+    // Primero en la ventana centrada; al cerrarla queda en el formulario (spec 008, RF-29).
+    const dialog = within(await screen.findByRole('dialog', { name: 'Revisá lo siguiente' }));
+    expect(dialog.getByRole('alert').textContent).toBe('La causa está desactivada');
+    await user.click(dialog.getByRole('button', { name: 'Entendido' }));
     const form = within(screen.getByRole('region', { name: 'Registrar como movimiento' }));
-    expect((await form.findByRole('alert')).textContent).toBe('La causa está desactivada');
+    expect(form.getByRole('alert').textContent).toBe('La causa está desactivada');
     expect(form.getByRole('button', { name: 'Guardar movimiento' })).toBeTruthy();
     expect(screen.queryByText('Movimiento registrado')).toBeNull();
   });

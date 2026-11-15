@@ -100,3 +100,49 @@ describe('PreguntaConfirmacion (RF-9, RF-16, RF-19, RF-43)', () => {
     expect(screen.getByText('Parte 2: Pedro López')).toBeTruthy();
   });
 });
+
+describe('PreguntaConfirmacion en una ventana centrada (spec 008, RF-29)', () => {
+  const question = () =>
+    questionFrom('Ya existe otra causa con ese número de expediente', {
+      codigo: 'EXPEDIENTE_REPETIDO',
+    });
+
+  it('va en una ventana modal sobre la página, con el foco en ella', () => {
+    const { container } = render(
+      <section aria-label="Página">
+        <PreguntaConfirmacion question={question()} onAnswer={vi.fn()} />
+      </section>,
+    );
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    // Fuera de la página, para que ninguna animación la desplace.
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.activeElement).toBe(dialog);
+  });
+
+  it('muestra los datos que la acompañan antes de los botones', () => {
+    render(
+      <PreguntaConfirmacion question={question()} onAnswer={vi.fn()}>
+        <p>Fallo con el que coincide</p>
+      </PreguntaConfirmacion>,
+    );
+
+    const dialog = within(screen.getByRole('alertdialog'));
+    const data = dialog.getByText('Fallo con el que coincide');
+    expect(
+      data.compareDocumentPosition(dialog.getByRole('button', { name: 'Cancelar' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('no se cierra con Esc: solo respondiendo', async () => {
+    const onAnswer = vi.fn();
+    render(<PreguntaConfirmacion question={question()} onAnswer={onAnswer} />);
+
+    await userEvent.setup().keyboard('{Escape}');
+
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+    expect(onAnswer).not.toHaveBeenCalled();
+  });
+});

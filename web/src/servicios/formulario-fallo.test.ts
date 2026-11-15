@@ -100,19 +100,31 @@ describe('validateRulingForm (RF-1, RF-3 a RF-8, RF-14)', () => {
       { caratula: 'a'.repeat(256) },
       'La carátula no puede tener más de 255 caracteres',
     ],
-    ['< en la carátula', { caratula: 'Pérez <b>' }, singleLineCharactersMessage('La carátula')],
+    [
+      '< en la carátula',
+      { caratula: 'Pérez <b>' },
+      `${singleLineCharactersMessage('La carátula')}. No se aceptan: < >`,
+    ],
     [
       'un tribunal de 151 caracteres',
       { tribunal: 'a'.repeat(151) },
       'El tribunal no puede tener más de 150 caracteres',
     ],
-    ['= en el tribunal', { tribunal: 'Sala=A' }, singleLineCharactersMessage('El tribunal')],
+    [
+      '= en el tribunal',
+      { tribunal: 'Sala=A' },
+      `${singleLineCharactersMessage('El tribunal')}. No se aceptan: =`,
+    ],
     [
       'un número de 51 caracteres',
       { numero: '1'.repeat(51) },
       'El número no puede tener más de 50 caracteres',
     ],
-    ['{ en el número', { numero: '12{3}' }, singleLineCharactersMessage('El número')],
+    [
+      '{ en el número',
+      { numero: '12{3}' },
+      `${singleLineCharactersMessage('El número')}. No se aceptan: { }`,
+    ],
     [
       'un sumario de 5.001 caracteres',
       { sumario: 'a'.repeat(5001) },
@@ -123,10 +135,58 @@ describe('validateRulingForm (RF-1, RF-3 a RF-8, RF-14)', () => {
       { sumario: `${'a'.repeat(4998)}…` },
       FALLO_MESSAGES.sumarioTooLong,
     ],
-    ['un emoji en el sumario', { sumario: 'Fallo 😀' }, sumarioCharactersMessage('El sumario')],
-    ['| en el sumario', { sumario: 'a | b' }, sumarioCharactersMessage('El sumario')],
-  ])('rechaza %s con el mensaje de la API', (_case, changes, message) => {
-    expect(validate(changes)).toEqual([message]);
+    [
+      'un emoji en el sumario',
+      { sumario: 'Fallo 😀' },
+      `${sumarioCharactersMessage('El sumario')}. No se aceptan: 😀`,
+    ],
+    [
+      '| en el sumario',
+      { sumario: 'a | b' },
+      `${sumarioCharactersMessage('El sumario')}. No se aceptan: |`,
+    ],
+  ])(
+    'rechaza %s con el mensaje de la API y los caracteres rechazados',
+    (_case, changes, message) => {
+      expect(validate(changes)).toEqual([message]);
+    },
+  );
+
+  describe('nombra los caracteres rechazados (RF-8)', () => {
+    const sumarioMessage = (rejected: string) =>
+      `${sumarioCharactersMessage('El sumario')}. No se aceptan: ${rejected}`;
+
+    it('cada uno una sola vez, en el orden en que aparecen', () => {
+      expect(validate({ sumario: 'art. 245 + art. 2 * nota + otra *' })).toEqual([
+        sumarioMessage('+ *'),
+      ]);
+    });
+
+    it('hasta 10', () => {
+      expect(validate({ sumario: 'a*b+c=d<e>f{g}h|i~j^k@l' })).toEqual([
+        sumarioMessage('* + = < > { } | ~ ^'),
+      ]);
+    });
+
+    it('un carácter que no se ve se nombra como invisible, una sola vez', () => {
+      const bell = String.fromCharCode(7);
+      expect(validate({ sumario: `a${bell}b${bell}c *` })).toEqual([
+        sumarioMessage('(carácter invisible) *'),
+      ]);
+    });
+
+    it('un emoji con selector de variante se nombra solo por el emoji', () => {
+      const heart = String.fromCodePoint(0x2764, 0xfe0f);
+      expect(validate({ sumario: `Fallo ${heart}` })).toEqual([
+        sumarioMessage(String.fromCodePoint(0x2764)),
+      ]);
+    });
+
+    it('junta los de todas las palabras clave', () => {
+      expect(validate({ palabrasClave: ['daño + moral', 'despido*', 'otra +'] })).toEqual([
+        `${singleLineCharactersMessage('La palabra clave')}. No se aceptan: + *`,
+      ]);
+    });
   });
 
   it('acepta un sumario de exactamente 5.000 caracteres', () => {
@@ -154,7 +214,11 @@ describe('validateRulingForm (RF-1, RF-3 a RF-8, RF-14)', () => {
     ],
     ['una palabra clave vacía', ['daño', '  '], FALLO_MESSAGES.keywordEmpty],
     ['una palabra clave de 51 caracteres', ['a'.repeat(51)], FALLO_MESSAGES.keywordTooLong],
-    ['< en una palabra clave', ['daño <moral>'], singleLineCharactersMessage('La palabra clave')],
+    [
+      '< en una palabra clave',
+      ['daño <moral>'],
+      `${singleLineCharactersMessage('La palabra clave')}. No se aceptan: < >`,
+    ],
   ])('rechaza %s', (_case, palabrasClave, message) => {
     expect(validate({ palabrasClave })).toEqual([message]);
   });

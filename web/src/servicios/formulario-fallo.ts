@@ -26,6 +26,8 @@ import {
   MAX_SEARCH_LENGTH,
   MAX_SUMARIO_LENGTH,
   MAX_TRIBUNAL_LENGTH,
+  rejectedSingleLineCharacters,
+  rejectedSumarioCharacters,
   textLength,
 } from './texto-fallo';
 
@@ -72,6 +74,18 @@ const multiline = (value: string) => convertText(value, { multilinea: true });
 const onlyProblems = (problems: (string | null)[]) =>
   problems.filter((problem): problem is string => problem !== null);
 
+/**
+ * Mensaje de caracteres de la API más los caracteres rechazados que encontró, para que se
+ * puedan ubicar en un texto largo. Solo el formulario los nombra: la API no repite el texto
+ * recibido (RF-8).
+ */
+export function withRejectedCharacters(message: string, rejected: readonly string[]): string {
+  return rejected.length === 0 ? message : `${message}. No se aceptan: ${rejected.join(' ')}`;
+}
+
+const singleLineCharactersProblem = (text: string, label: string) =>
+  withRejectedCharacters(singleLineCharactersMessage(label), rejectedSingleLineCharacters(text));
+
 /** Día actual en Buenos Aires como AAAA-MM-DD: el máximo de la fecha de un fallo (RF-7). */
 export function todayInBuenosAires(ahora: Date = new Date()): string {
   // El formato en-CA es AAAA-MM-DD.
@@ -98,7 +112,7 @@ function singleLineProblem(
   const text = singleLine(value);
   if (text === '') return required ?? null;
   if (textLength(text) > max) return `${label} no puede tener más de ${max} caracteres`;
-  return hasOnlySingleLineCharacters(text) ? null : singleLineCharactersMessage(label);
+  return hasOnlySingleLineCharacters(text) ? null : singleLineCharactersProblem(text, label);
 }
 
 /** Fecha existente y en el rango de RF-7; `required` es el mensaje si falta. */
@@ -113,7 +127,12 @@ function sumarioProblem(value: string): string | null {
   const text = multiline(value);
   if (text === '') return FALLO_MESSAGES.sumarioRequired;
   if (textLength(text) > MAX_SUMARIO_LENGTH) return FALLO_MESSAGES.sumarioTooLong;
-  return hasOnlySumarioCharacters(text) ? null : sumarioCharactersMessage(SUMARIO_LABEL);
+  return hasOnlySumarioCharacters(text)
+    ? null
+    : withRejectedCharacters(
+        sumarioCharactersMessage(SUMARIO_LABEL),
+        rejectedSumarioCharacters(text),
+      );
 }
 
 function keywordsProblem(palabras: readonly string[]): string | null {
@@ -124,9 +143,10 @@ function keywordsProblem(palabras: readonly string[]): string | null {
   if (keywords.some((palabra) => textLength(palabra) > MAX_KEYWORD_LENGTH)) {
     return FALLO_MESSAGES.keywordTooLong;
   }
+  // El espacio que las une está permitido: no aparece entre los rechazados.
   return keywords.every(hasOnlySingleLineCharacters)
     ? null
-    : singleLineCharactersMessage(KEYWORD_LABEL);
+    : singleLineCharactersProblem(keywords.join(' '), KEYWORD_LABEL);
 }
 
 function linkProblem(value: string): string | null {

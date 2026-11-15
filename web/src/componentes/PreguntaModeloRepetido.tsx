@@ -17,8 +17,7 @@ export function PreguntaModeloRepetido({
 }) {
   const modelos = question.modelos ?? [];
   return (
-    <div className="space-y-2">
-      <PreguntaConfirmacion question={question} onAnswer={onAnswer} />
+    <PreguntaConfirmacion question={question} onAnswer={onAnswer}>
       {modelos.length > 0 && (
         <ul
           aria-label="Modelos con ese título"
@@ -42,6 +41,6 @@ export function PreguntaModeloRepetido({
           ))}
         </ul>
       )}
-    </div>
+    </PreguntaConfirmacion>
   );
 }

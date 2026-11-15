@@ -3,6 +3,8 @@ import { ApiError, type HttpClient } from './cliente-http';
 import {
   canAccess,
   createSessionService,
+  LOGIN_MESSAGES,
+  loginFormProblem,
   resolveLandingRoute,
   type Rol,
   type UsuarioPropio,
@@ -25,6 +27,34 @@ function user(rol: Rol, debeCambiarContrasena = false): UsuarioPropio {
 const admin = user('admin');
 const lawyer = user('abogado');
 const client = user('cliente');
+
+describe('loginFormProblem (RF-8, RF-9)', () => {
+  it.each([
+    ['DNI', '20111222'],
+    ['DNI con puntos', '20.111.222'],
+    ['CUIT con guiones', '30-71234567-1'],
+  ])('acepta un %s con contraseña', (_case, documento) => {
+    expect(loginFormProblem(documento, 'clave del estudio')).toBeNull();
+  });
+
+  it.each([
+    ['sin documento', '', 'clave'],
+    ['con el documento solo con espacios', '   ', 'clave'],
+    ['sin contraseña', '20111222', ''],
+    ['con un email y sin contraseña', 'ana@estudio.com', ''],
+  ])('pide completar los dos campos %s', (_case, documento, contrasena) => {
+    expect(loginFormProblem(documento, contrasena)).toBe(LOGIN_MESSAGES.emptyFields);
+  });
+
+  it.each(['ana@estudio.com', ' ana@estudio.com ', '20111222@'])(
+    'avisa que no se ingresa con email ante "%s"',
+    (documento) => {
+      expect(loginFormProblem(documento, 'clave')).toBe(
+        'Se ingresa con el DNI (o el CUIT de tu empresa), no con el email',
+      );
+    },
+  );
+});
 
 describe('resolveLandingRoute (RF-8, RF-11)', () => {
   it.each([

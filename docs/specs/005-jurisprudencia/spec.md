@@ -69,6 +69,8 @@ Los integrantes del estudio usan fallos de los tribunales para fundar sus escrit
   - Sumario vacío: "Indicá el sumario del fallo".
   - Enlace que no empieza con `https://`: "El enlace debe empezar con https://".
   - Enlace que no cumple alguna otra regla de RF-6: "El enlace tiene un formato o caracteres no permitidos".
+
+  Única excepción a "sin repetir el texto recibido": cuando la carátula, el tribunal, el número, el sumario o una palabra clave tienen caracteres no permitidos (RF-4, RF-5, RF-14), el formulario del navegador agrega al mensaje de la regla los caracteres que encontró, sin repetir, en el orden en que aparecen y hasta 10, para que se puedan ubicar en un texto largo. Por ejemplo: "El sumario solo puede tener letras, números, espacios, saltos de línea y los símbolos . , ; : / - _ ( ) " ' $ & # ° º ª ¿ ? ¡ ! %. No se aceptan: * +". Un carácter que no se ve se nombra como "(carácter invisible)". Un selector de variante no se nombra aparte, porque acompaña a un emoji que ya se nombra. Solo los muestra el navegador, al mismo integrante que los escribió, como texto. La API responde el mensaje de la regla sin los caracteres. Se agregó el 14/11/2026.
 - RF-9: EL SISTEMA llama **comparación flexible** a comparar dos textos, después de RF-3, sin distinguir mayúsculas, minúsculas, tildes ni diéresis, y tomando la ñ como n. Con la comparación flexible, "Daño Moral", "dano moral" y "DANO MORAL" son iguales, y también "año" y "ano", y "pingüino" y "pinguino".
 
 ### Palabras clave

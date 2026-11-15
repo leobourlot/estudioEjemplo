@@ -92,7 +92,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
 ### PDF en el portal del cliente
 - RF-33: EL SISTEMA considera que un cliente puede ver el PDF de un movimiento si y solo si el movimiento tiene PDF y el cliente puede ver el movimiento (spec 003, RF-30): es visible, no está anulado y el cliente está vinculado a su causa, que está activa.
 
-  Esta es la única regla que decide qué PDF ve un cliente, y se aplica siempre en el servidor, en cada acción del cliente (spec 004, RF-3). Un cliente solo puede ver PDF de sus propias causas.
+  Esta es la única regla que decide qué PDF ve un cliente, y se aplica siempre en el servidor, en cada acción del cliente (spec 004, RF-3). Un cliente solo puede ver PDF de sus propias causas. Modificado por la spec 011 (RF-13): además, el plan del estudio tiene que ser Premium.
 - RF-34: CUANDO un cliente consulta los movimientos de su causa (spec 004, RF-21) o abre un movimiento (spec 004, RF-22), EL SISTEMA muestra la leyenda "PDF" y las opciones de RF-28 solo en los movimientos cuyo PDF puede ver. En los demás no muestra ninguna opción ni indicio de PDF, así que el portal nunca le ofrece pedir un PDF que no puede ver.
 - RF-35: EL SISTEMA solo envía al cliente, de cada PDF que puede ver, lo necesario para verlo y descargarlo: que lo tiene y, al pedirlo, el archivo con su nombre (RF-7). Esto se suma a lo que enumera la spec 004 (RF-30). El portal no muestra el tamaño. Nunca le envía:
   - Si un movimiento que no puede ver tiene PDF.
@@ -237,7 +237,7 @@ Esta spec amplía las specs 003, 004, 005 y 009 sin reescribirlas (como establec
 - Búsqueda dentro del texto de los PDF, vista previa en miniatura y cantidad de páginas.
 - Comprimir, unir, dividir, convertir o reconocer el texto (OCR) de los archivos.
 - Filtrar el historial de movimientos o el listado de jurisprudencia por "con PDF".
-- Límite de espacio total o de cantidad de PDF fuera del modo demo.
+- Límite de espacio total o de cantidad de PDF fuera del modo demo. Ampliado por la spec 011: los PDF son del plan Premium, con un espacio total de 10 GB.
 - Límite de subidas o descargas simultáneas.
 - Detección de formularios desactualizados o de ediciones simultáneas.
 - Avisos al cliente cuando se le comparte un PDF.

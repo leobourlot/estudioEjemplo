@@ -80,6 +80,17 @@ describe('PaginaIngreso (RF-8 a RF-10)', () => {
     expect(service.login).not.toHaveBeenCalled();
   });
 
+  it('con un email avisa que se ingresa con DNI o CUIT, sin enviar el ingreso', async () => {
+    const service = await openLogin(async () => testUser('admin'));
+
+    await submit('ana@estudio.com', 'clave del estudio 2026');
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Se ingresa con el DNI (o el CUIT de tu empresa), no con el email',
+    );
+    expect(service.login).not.toHaveBeenCalled();
+  });
+
   it('deshabilita el botón mientras espera la respuesta', async () => {
     let finish!: (usuario: UsuarioPropio) => void;
     await openLogin(() => new Promise((resolve) => (finish = resolve)));

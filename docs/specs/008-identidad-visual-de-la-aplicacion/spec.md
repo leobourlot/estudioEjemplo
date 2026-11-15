@@ -77,8 +77,16 @@ El sitio público ya tiene la identidad del estudio: el logo, el degradado de su
   - El paginado, debajo de la tabla.
 - RF-22: EL SISTEMA aplica la presentación de RF-21 (tabla en tarjeta, títulos con fondo tenue, filas separadas por una línea visible y resaltadas al pasar el puntero) al listado de cuentas. En los listados de jurisprudencia y de modelos de escritos, que no son tablas, muestra cada fallo y cada modelo en su propia tarjeta con borde, separada de la siguiente por un espacio y que responde al pasar el puntero.
 - RF-23: EL SISTEMA muestra cada movimiento del historial del panel (spec 003, RF-24) en su propia tarjeta con borde, separada de la siguiente por un espacio, con una barra de color a la izquierda: azul si es visible para el cliente y gris si está oculto. La barra acompaña a la etiqueta "Visible" u "Oculto", que se sigue mostrando: la información no depende solo del color.
-- RF-24: EL SISTEMA muestra los formularios, los detalles y las preguntas de confirmación del panel dentro de tarjetas, con los botones principales en el azul oscuro del estudio y los secundarios con borde.
+- RF-24: EL SISTEMA muestra los formularios, los detalles y las preguntas de confirmación del panel dentro de tarjetas, con los botones principales en el azul oscuro del estudio y los secundarios con borde. Las preguntas que hace la API se muestran en la ventana de RF-29.
 - RF-25: EL SISTEMA muestra la pantalla "Inicio" del panel con el saludo "Hola, <nombre>." como título principal, con el nombre del usuario, y, debajo, un acceso por cada opción del menú, salvo "Inicio", en tarjetas con su ícono y su nombre. No muestra contadores ni resúmenes: quedan fuera de alcance.
+
+### Panel: avisos y preguntas en una ventana
+- RF-29: Para que se vean aunque el usuario haya bajado en la página, EL SISTEMA muestra en una ventana centrada sobre la página, con el resto oscurecido y bloqueado, los avisos y las preguntas del panel. Se agregó el 14/11/2026 a pedido del estudio.
+  - CUANDO un formulario o una acción del panel tiene problemas (los de validación o los que responde la API, en las specs 001 a 006), EL SISTEMA los muestra en una ventana titulada "Revisá lo siguiente", con el botón "Entendido". La ventana se cierra con "Entendido", con Esc o tocando fuera de ella. Al cerrarla, los problemas quedan en el aviso rojo de siempre, arriba del formulario, para consultarlos mientras se corrige.
+  - La ventana vuelve a abrirse cada vez que cambian los problemas y cada vez que se vuelve a enviar el formulario con los mismos problemas. Escribir en los campos no la abre.
+  - Las preguntas que hace la API (expediente repetido, parte o cliente con ese documento o nombre, fallo repetido, modelo repetido) se muestran en la misma ventana, con sus datos y sus botones. Solo se cierran respondiendo.
+  - Al abrirse, la ventana toma el foco, que no sale de ella con Tab, y el lector de pantalla la anuncia. Al cerrarse, el foco vuelve a donde estaba.
+  - La pantalla de ingreso no cambia: su aviso sigue dentro de la tarjeta (RF-13). Las confirmaciones que aparecen junto al botón que las pide (por ejemplo, "¿Desactivar esta causa?") tampoco cambian.
 
 ### Animaciones
 - RF-26: EL SISTEMA anima estas pantallas con la biblioteca Motion, la misma del sitio público (spec 007, RF-45), y con transiciones de CSS donde alcanzan, como en el sitio público:
@@ -123,6 +131,11 @@ El sitio público ya tiene la identidad del estudio: el logo, el degradado de su
   - Detalle de una causa, de un movimiento, de un fallo, de un modelo o de una cuenta: queda marcada la opción de su sección (RF-7).
   - Cliente en "Cambiar contraseña" desde el portal: es la pantalla aparte de RF-14, sin el menú.
   - Cierre de sesión con el menú plegado abierto (por vencimiento o desde otra pestaña): se aplica la spec 001 y el menú desaparece con la pantalla.
+- **Ventana de avisos y preguntas (RF-29):**
+  - El integrante bajó hasta el final de un formulario largo y guarda con errores: la ventana aparece en el centro de lo que está viendo, sin que tenga que subir.
+  - Cierra la ventana y vuelve a guardar sin corregir nada: la ventana aparece de nuevo con los mismos problemas.
+  - Muchos errores en una pantalla de 360 × 640 px: la ventana no se sale de la pantalla y se desplaza por dentro hasta "Entendido". También se cierra tocando fuera de ella.
+  - Pregunta de fallo repetido: el enlace al fallo con el que coincide se abre en otra pestaña y la ventana sigue abierta hasta responder.
 - **Ingreso:**
   - El estudio todavía no informó la dirección: abajo del panel de la marca solo van los WhatsApp, separados por " · " y sin " · " adelante (RF-11).
   - Error de credenciales o demasiados intentos: el aviso va dentro de la tarjeta, como hoy (RF-13).

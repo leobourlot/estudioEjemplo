@@ -44,7 +44,7 @@ El panel de administración y el portal de clientes manejan información amparad
 
 ### Ingreso
 - RF-8: CUANDO un usuario ingresa un DNI o CUIT y una contraseña correctos de una cuenta activa, EL SISTEMA inicia la sesión y registra la fecha de último ingreso. Si la cuenta tiene un cambio de contraseña pendiente, lo lleva a la pantalla de cambio de contraseña; si no, al inicio de su sección: el panel para administradores y abogados, el portal para clientes. Ingresan con su DNI los integrantes y los clientes personas físicas, y con su CUIT los clientes personas jurídicas. El email no sirve para ingresar. El estudio lo pidió el 30/10/2026.
-- RF-9: SI el DNI o CUIT no corresponde a ninguna cuenta, la contraseña es incorrecta o la cuenta está desactivada, ENTONCES EL SISTEMA rechaza el ingreso con el mensaje genérico "DNI/CUIT o contraseña incorrectos", sin indicar cuál de los datos falló.
+- RF-9: SI el DNI o CUIT no corresponde a ninguna cuenta, la contraseña es incorrecta o la cuenta está desactivada, ENTONCES EL SISTEMA rechaza el ingreso con el mensaje genérico "DNI/CUIT o contraseña incorrectos", sin indicar cuál de los datos falló. SI lo escrito en "DNI o CUIT" tiene una @, ENTONCES la pantalla de ingreso no envía el ingreso y muestra "Se ingresa con el DNI (o el CUIT de tu empresa), no con el email". Solo mira lo escrito, así que no revela nada de las cuentas, y no cuenta como intento para RF-10. Se agregó el 14/11/2026.
 - RF-10: SI se superan 5 intentos de ingreso con un mismo DNI o CUIT desde una misma dirección IP, o 30 intentos desde una misma dirección IP, ENTONCES EL SISTEMA rechaza nuevos intentos con el mensaje "Demasiados intentos. Probá de nuevo en unos minutos". La ventana es de 15 minutos desde el primer intento contado; los intentos rechazados durante el bloqueo no la extienden. Se cuentan todos los intentos, exitosos o fallidos.
 - RF-11: MIENTRAS una cuenta tiene pendiente el cambio de contraseña, EL SISTEMA solo le permite cambiar su contraseña, consultar sus propios datos y cerrar sesión.
 
@@ -105,7 +105,7 @@ El panel de administración y el portal de clientes manejan información amparad
 - DNI o CUIT escrito con puntos, guiones o espacios, tanto al crear como al ingresar (RF-5), o CUIT con dígito verificador inválido (RF-6).
 - Cliente sin email: se crea, ingresa y se reactiva igual que uno con email (RF-3, RF-24).
 - Un integrante que también es cliente del estudio: no puede tener además una cuenta de cliente, porque su DNI ya identifica a su cuenta de integrante (RF-1, RF-25). Sigue sus causas desde el panel. El estudio lo aceptó el 30/10/2026; si hace falta, se revisa más adelante.
-- Ingreso con un email en lugar del DNI o CUIT: se rechaza con el mensaje genérico (RF-9).
+- Ingreso con un email en lugar del DNI o CUIT: la pantalla lo detecta por la @ y muestra el aviso de RF-9 sin enviar el ingreso. Si llega a la API por otro medio, se rechaza con el mensaje genérico (RF-9).
 - Integrante cargado antes de que existiera el DNI, sin DNI: no puede ingresar hasta que un administrador se lo cargue (RF-2, RF-8).
 - Alta de un cliente con el DNI/CUIT de un cliente desactivado: se ofrece reactivarlo en lugar de duplicarlo (RF-25).
 - Alta con el email de una cuenta desactivada: se rechaza hasta que un administrador lo libere (RF-24).
