@@ -215,7 +215,7 @@ Reglas para todas las tareas:
   Los agregados de la sección "Documentación" del plan.
   Hecho cuando: el README explica en "Desarrollo" que `api/.env` y `api/.env.test` necesitan `PLAN` (y que sin ella la api y los tests no arrancan); tiene la sección "Planes" (qué incluye cada uno, cómo cambiar de plan en Easypanel, qué pasa con los integrantes al pasar al Básico, cómo dar más espacio verificando antes el disco y las copias, y que después de publicar hay que correr la migración o el ingreso responde 503); "Modo demo" indica `PLAN=premium`; y `api/.env.example` tiene las dos variables con su explicación.
 
-- [ ] **T39 — Validación de la spec**
+- [x] **T39 — Validación de la spec**
   Recorrer `spec.md` requisito por requisito con su test, correr la migración `up` y `down` sobre la base de tests y hacer la demo manual de los criterios de finalización, cambiando `PLAN` en `api/.env` de desarrollo (lo cambiás vos).
   Hecho cuando:
   - Cada RF y cada requisito no funcional tiene al menos un test en verde identificado, con los dos planes.

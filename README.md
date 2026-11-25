@@ -79,7 +79,7 @@ La estructura de `web/src` y `api/src` es orientativa. Cada `plan.md` define los
 | 008-identidad-visual-de-la-aplicacion | Logo, colores, menú lateral y tarjetas en el ingreso, el portal y el panel | 007 | Terminada |
 | 009-demo-y-marca-configurable | Marca en un único archivo, tests sin datos de la marca y modo demo | 001, 007, 008 | Terminada |
 | 010-pdf-de-movimientos-y-fallos | Un PDF por movimiento y por fallo, guardado en la base; el cliente lo ve si ve el movimiento | 003, 004, 005, 009 | Terminada |
-| 011-planes-de-suscripcion | Planes Básico y Premium por publicación: jurisprudencia, PDF con 10 GB de espacio y límite de integrantes | 001, 005, 008, 009, 010 | En curso |
+| 011-planes-de-suscripcion | Planes Básico y Premium por publicación: jurisprudencia, PDF con 10 GB de espacio y límite de integrantes | 001, 005, 008, 009, 010 | Terminada |
 
 Cada spec pasa por el ciclo completo (spec → clarificación → plan → tareas → implementación → validación) antes de empezar la siguiente.
 
